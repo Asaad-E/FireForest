@@ -6,51 +6,68 @@ namespace FireForest;
 
 public class CA
 {
-    private Cell[] Grid = new Cell[CAParams.Totalcells];
-    private Cell[] nextGrid = new Cell[CAParams.Totalcells];
+    private Cell[] Grid = [];
+    private Cell[] nextGrid = [];
     private static readonly (int, int)[] offsets = [(-1, 0), (1, 0), (0, -1), (0, 1)];
 
     // Variables for Fast draw
-    private Color[] PixelBuffer = new Color[CAParams.Totalcells];
+    private Color[] PixelBuffer = [];
     private Image Image;
     private Texture2D GridTexture;
 
     public bool TerrainChanged = false;
 
-    public CA()
-    {
-        Restart();
+    public CA() { }
 
+    public void Setup()
+    {
+        // Re seize the world arrays
+        Grid = new Cell[CAParams.Totalcells];
+        nextGrid = new Cell[CAParams.Totalcells];
+        PixelBuffer = new Color[CAParams.Totalcells];
+
+        // init
+        ReGenerate();
+    }
+
+    public void LoadTextures()
+    {
         // Init
         Image = Raylib.GenImageColor(CAParams.GridSizeX, CAParams.GridSizeY, Color.Black);
         GridTexture = Raylib.LoadTextureFromImage(Image);
         Raylib.SetTextureFilter(GridTexture, TextureFilter.Point);
     }
 
-
-    public void Restart()
+    public void ReGenerate()
     {
         Utils.SetRandomNoiseSeed();
+        Restart();
 
-        for (int i = 0; i < CAParams.GridSizeX; i++)
+    }
+    public void Restart()
+    {
+        Parallel.For(0, CAParams.GridSizeY, j =>
         {
-            for (int j = 0; j < CAParams.GridSizeY; j++)
+            for (int i = 0; i < CAParams.GridSizeX; i++)
             {
                 Cell newCell = new();
                 int faltCoord = i + j * CAParams.GridSizeX;
 
                 float noise = (Utils.GetNoise(i * CAParams.CellSize, j * CAParams.CellSize) + 1f) / 2f;
+                float fuelCapacity = Utils.GetFuelNoise(i * CAParams.CellSize, j * CAParams.CellSize);
 
+                // Console.WriteLine(fuelCapacity);
 
                 // Cell initializatino
                 newCell.Type = GetTypeFromLevel(noise);
                 newCell.ElevationValue = noise;
+                newCell.FuelCapacity = fuelCapacity;
                 Grid[faltCoord] = newCell;
                 nextGrid[faltCoord] = newCell;
                 PixelBuffer[faltCoord] = newCell.GetColor();
 
             }
-        }
+        });
     }
 
     public static Cell.Types GetTypeFromLevel(float Level)
@@ -73,16 +90,16 @@ public class CA
 
     public void ChangeTerrain()
     {
-        for (int i = 0; i < CAParams.GridSizeX; i++)
+        Parallel.For(0, CAParams.GridSizeY, j =>
         {
-            for (int j = 0; j < CAParams.GridSizeY; j++)
+            for (int i = 0; i < CAParams.GridSizeX; i++)
             {
                 int flatCoord = i + j * CAParams.GridSizeX;
 
-                float noise = (Utils.GetNoise(i * CAParams.CellSize, j * CAParams.CellSize) + 1f) / 2f;
+                float elevation = (Utils.GetNoise(i * CAParams.CellSize, j * CAParams.CellSize) + 1f) / 2f;
 
                 // Terrain segmentation
-                Cell.Types newType = GetTypeFromLevel(noise);
+                Cell.Types newType = GetTypeFromLevel(elevation);
 
                 if (newType != Cell.Types.Tree)
                 {
@@ -95,13 +112,18 @@ public class CA
                     nextGrid[flatCoord].Type = newType;
                 }
 
+                Grid[flatCoord].ElevationValue = elevation;
+                nextGrid[flatCoord].ElevationValue = elevation;
                 PixelBuffer[flatCoord] = Grid[flatCoord].GetColor();
+
+
             }
-        }
+        });
     }
 
     public void Update()
     {
+        if (TerrainChanged) return;
 
         SnapshotParams caparams = CAParams.GetSnapshotParams();
 
@@ -123,12 +145,6 @@ public class CA
         });
 
         (Grid, nextGrid) = (nextGrid, Grid);
-
-        if (TerrainChanged)
-        {
-            ChangeTerrain();
-            TerrainChanged = false;
-        }
     }
 
     public Cell UpdateCell(int x, int y, in SnapshotParams caparams)
@@ -141,8 +157,20 @@ public class CA
             return currentCell;
         }
 
+        // Fire Type
+        if (currentCell.Type == Cell.Types.Fire)
+        {
+            if (--currentCell.Count <= 0)
+            {
+                currentCell.Type = Cell.Types.Calcined;
+            }
+            return currentCell;
+        }
+
 
         int neighnorsTree = 1;
+        int neighnorsSoil = 1;
+
         // Calculate influence of other cells
         for (int i = 0; i < 4; i++)
         {
@@ -154,38 +182,45 @@ public class CA
             Cell.Types neighnorType = Grid[newX + newY * CAParams.GridSizeX].Type;
 
 
-            if (neighnorType == Cell.Types.Tree)
-            {
-                neighnorsTree += 1;
-            }
-            else if (currentCell.Type == Cell.Types.Tree && neighnorType == Cell.Types.Fire && Utils.NextFloat() <= caparams.FireProb)
+
+            if (currentCell.Type == Cell.Types.Tree && neighnorType == Cell.Types.Fire && Utils.NextFloat() <= caparams.FireProb * Utils.EasingFunctionFuel(currentCell.FuelCapacity))
             {
                 currentCell.SetOnFire(caparams.FireDuration);
                 break;
             }
-        }
-
-        // Fire duration
-        if (currentCell.Type == Cell.Types.Fire)
-        {
-            if (--currentCell.Count <= 0)
+            else
             {
-                currentCell.Type = Cell.Types.Calcined;
+                if (neighnorType == Cell.Types.Tree)
+                {
+                    neighnorsTree += 1;
+                }
+                else if (neighnorType == Cell.Types.Tree)
+                {
+                    neighnorsSoil += 1;
+                }
             }
-            return currentCell;
         }
 
-        // espotaneus tree
+        // Calcined Type
         if (currentCell.Type == Cell.Types.Calcined)
         {
-            if (Utils.NextFloat() <= caparams.TreeProb * MathF.Pow(neighnorsTree, 4.2f))
+            if (Utils.NextFloat() <= caparams.SoilProb * currentCell.FuelCapacity * MathF.Exp(CAParams.SoilProbconst * (neighnorsTree + neighnorsSoil)))
+            {
+                currentCell.Type = Cell.Types.Soil;
+            }
+        }
+
+        // Soil Type
+        else if (currentCell.Type == Cell.Types.Soil)
+        {
+            if (Utils.NextFloat() <= caparams.TreeProb * currentCell.FuelCapacity * MathF.Exp(CAParams.TreeProbconst * neighnorsTree))
             {
                 currentCell.Type = Cell.Types.Tree;
             }
         }
 
-        // Logic of trees
-        if (currentCell.Type == Cell.Types.Tree)
+        // Tree Type
+        else if (currentCell.Type == Cell.Types.Tree)
         {
             // Fast siple check
             if ((Utils.NextInt() & 1023) == 0)
@@ -208,7 +243,7 @@ public class CA
         Raylib.DrawTexturePro(
         GridTexture,
         new Rectangle(0, 0, CAParams.GridSizeX, CAParams.GridSizeY),
-        new Rectangle(0, 0, SimParams.ScreenWidth, SimParams.ScreenHeight),
+        new Rectangle(0, 0, SimParams.SimulationWidth * CAParams.CellSize, SimParams.SimulationHeight * CAParams.CellSize),
         Vector2.Zero,
         0.0f,
         Color.White
@@ -226,6 +261,8 @@ public class CA
     {
         int gridX = (int)globalPos.X / CAParams.CellSize;
         int gridY = (int)globalPos.Y / CAParams.CellSize;
+
+        // return ;
         Grid[gridX + gridY * CAParams.GridSizeX].SetOnFire(CAParams.FireDuration);
     }
 

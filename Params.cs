@@ -3,38 +3,65 @@ using Raylib_cs;
 namespace FireForest;
 
 
-public readonly record struct SnapshotParams(float SpontaneousFireProb, float TreeProb, float FireProb, int FireDuration);
+public readonly record struct SnapshotParams(float SpontaneousFireProb, float TreeProb, float SoilProb, float FireProb, int FireDuration);
 
 
 #pragma warning disable CA2211
 public static class CAParams
 {
     public const int CellSize = 1;
-    public const int GridSizeX = 1500 / CellSize;
-    public const int GridSizeY = 1000 / CellSize;
-    public const int Totalcells = GridSizeX * GridSizeY;
+    public static int GridSizeX = 1;
+    public static int GridSizeY = 1;
+    public static int Totalcells = 1;
     public static int FireDuration = 40;
-    public static float FireProb = 0.3f;
-    public static float TreeProbBase = 0.00005f;
-    public static int TreeProbMult = 6;
+    public static float FireProb = 0.25f;
+
+    public static float TreeProbBase = 0.00003f;
+    public static int TreeProbMult = 3;
     public static float TreeProb = TreeProbBase * TreeProbMult;
-    public static float SpontaneousFireProbBase = 0.000000001f;
+    public static float TreeProbconst = 1.6f;
+
+
+    public static float SoilProbBase = 0.00001f;
+    public static int SoilProbMult = 7;
+    public static float SoilProb = SoilProbBase * SoilProbMult;
+    public static float SoilProbconst = 2.2f;
+
+
+    public static float SpontaneousFireProbBase = 0.0000000001f;
     public static int SpontaneousFireProbMult = 5;
     public static float SpontaneousFireProb = SpontaneousFireProbBase * SpontaneousFireProbMult;
 
     public static SnapshotParams GetSnapshotParams()
     {
-        return new SnapshotParams(SpontaneousFireProb, TreeProb, FireProb, FireDuration);
+        return new SnapshotParams(SpontaneousFireProb, TreeProb, SoilProb, FireProb, FireDuration);
     }
 }
 
 public static class SimParams
 {
-    public const int ScreenWidth = CAParams.GridSizeX * CAParams.CellSize;
-    public const int ScreenHeight = CAParams.GridSizeY * CAParams.CellSize;
 
-    public const float NoiseFrecuency = 0.003f;
-    public const int NoiseOctaves = 2;
+    public static int LauncherScreenWidth = 500;
+    public static int LauncherScreenHeight = 600;
+
+
+    public static int ScreenWidth = 1280;
+    public static int ScreenHeight = 720;
+    public static int SimulationHeight = 1500;
+
+    public static int SimulationWidth = SimulationHeight * ScreenWidth / ScreenHeight;
+
+
+    public static int MaxSimulationWidth = 5500;
+    public static int MaxSimulationHeight = 5500;
+
+
+
+    public static float MinZoom = ScreenHeight / (float)SimulationHeight;
+
+
+    public static float NoiseFrecuency = 0.002f;
+    public static int NoiseOctaves = 5;
     public const int FPS = 60;
     public static int FrameStep = 1;
     public static float WaterLevel = 0.4f;
