@@ -60,20 +60,26 @@ static class Program
 
 
             // Draw Grid
+            long startDraw = Stopwatch.GetTimestamp();
 
             Ca.Draw();
+
+            TimeSpan ElapsedTimeDraw = Stopwatch.GetElapsedTime(startDraw);
 
             // Update
             if (frameCount >= SimParams.FrameStep)
             {
                 frameCount = 0;
 
-                long start = Stopwatch.GetTimestamp();
+                long startUpdate = Stopwatch.GetTimestamp();
 
                 Ca.Update();
-                
-                TimeSpan ElapsedTime = Stopwatch.GetElapsedTime(start);
-                Console.WriteLine(ElapsedTime.TotalMilliseconds);
+
+                TimeSpan ElapsedTimeUpdate = Stopwatch.GetElapsedTime(startUpdate);
+
+                Console.WriteLine("-------------------------------------------------------");
+                Console.WriteLine(ElapsedTimeDraw.TotalMilliseconds);
+                Console.WriteLine(ElapsedTimeUpdate.TotalMilliseconds);
 
             }
 
@@ -93,8 +99,6 @@ static class Program
             {
                 DrawUI();
             }
-
-
 
             // End
             Raylib.EndDrawing();
@@ -117,12 +121,13 @@ static class Program
 
 
         if (ImGui.Begin("Options", ref ShowUi, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings))
-        {   
+        {
             ImGui.SeparatorText("Simulation");
 
             ImGui.Button("Stop");
 
-            if (ImGui.Button("Restart")){
+            if (ImGui.Button("Restart"))
+            {
                 Ca.Restart();
             }
 
@@ -153,14 +158,14 @@ static class Program
 
             ImGui.SeparatorText("World Geenration Parametres");
 
-            if (ImGui.SliderFloat("Water Level", ref SimParams.WaterLevel, 0, SimParams.RockLevel))
-            {
-                Ca.TerrainLevelChanged();
-            }
-            if (ImGui.SliderFloat("Rock Level", ref SimParams.RockLevel, SimParams.WaterLevel, 1))
-            {
-                Ca.TerrainLevelChanged();
+            bool TerrainLevelChanged = false;
 
+            TerrainLevelChanged |= ImGui.SliderFloat("Water Level", ref SimParams.WaterLevel, 0, SimParams.RockLevel);
+            TerrainLevelChanged |= ImGui.SliderFloat("Rock Level", ref SimParams.RockLevel, SimParams.WaterLevel, 1);
+
+            if (TerrainLevelChanged)
+            {
+                Ca.TerrainChanged = true;
             }
 
         }

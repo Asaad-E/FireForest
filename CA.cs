@@ -15,6 +15,8 @@ public class CA
     private Image Image;
     private Texture2D GridTexture;
 
+    public bool TerrainChanged = false;
+
     public CA()
     {
         Restart();
@@ -69,7 +71,7 @@ public class CA
 
     }
 
-    public void TerrainLevelChanged()
+    public void ChangeTerrain()
     {
         for (int i = 0; i < CAParams.GridSizeX; i++)
         {
@@ -87,35 +89,49 @@ public class CA
                     Grid[flatCoord].Type = newType;
                     nextGrid[flatCoord].Type = newType;
                 }
-                else if (nextGrid[flatCoord].Type == Cell.Types.Rock || nextGrid[flatCoord].Type == Cell.Types.Water)
+                else if (Grid[flatCoord].Type == Cell.Types.Rock || Grid[flatCoord].Type == Cell.Types.Water)
                 {
                     Grid[flatCoord].Type = newType;
                     nextGrid[flatCoord].Type = newType;
                 }
 
-
-
+                PixelBuffer[flatCoord] = Grid[flatCoord].GetColor();
             }
         }
     }
 
     public void Update()
     {
+
+        SnapshotParams caparams = CAParams.GetSnapshotParams();
+
         Parallel.For(0, CAParams.GridSizeY, j =>
         {
             int offset = j * CAParams.GridSizeX;
             for (int i = 0; i < CAParams.GridSizeX; i++)
             {
-                Cell updatedCell = UpdateCell(i, j);
+                Cell updatedCell = UpdateCell(i, j, in caparams);
                 nextGrid[i + offset] = updatedCell;
-                PixelBuffer[i + offset] = updatedCell.GetColor();
+
+                // Only update the color when a changed of type occurs or it's fire
+                if (updatedCell.Type != Grid[i + offset].Type || updatedCell.Type == Cell.Types.Fire)
+                {
+                    PixelBuffer[i + offset] = updatedCell.GetColor();
+                }
+
             }
         });
 
         (Grid, nextGrid) = (nextGrid, Grid);
+
+        if (TerrainChanged)
+        {
+            ChangeTerrain();
+            TerrainChanged = false;
+        }
     }
 
-    public Cell UpdateCell(int x, int y)
+    public Cell UpdateCell(int x, int y, in SnapshotParams caparams)
     {
         Cell currentCell = Grid[x + y * CAParams.GridSizeX];
 
@@ -142,9 +158,9 @@ public class CA
             {
                 neighnorsTree += 1;
             }
-            else if (currentCell.Type == Cell.Types.Tree && neighnorType == Cell.Types.Fire && Utils.NextFloat() <= CAParams.FireProb)
+            else if (currentCell.Type == Cell.Types.Tree && neighnorType == Cell.Types.Fire && Utils.NextFloat() <= caparams.FireProb)
             {
-                currentCell.SetOnFire();
+                currentCell.SetOnFire(caparams.FireDuration);
                 break;
             }
         }
@@ -162,7 +178,7 @@ public class CA
         // espotaneus tree
         if (currentCell.Type == Cell.Types.Calcined)
         {
-            if (Utils.NextFloat() <= CAParams.TreeProb * MathF.Pow(neighnorsTree, 4.2f))
+            if (Utils.NextFloat() <= caparams.TreeProb * MathF.Pow(neighnorsTree, 4.2f))
             {
                 currentCell.Type = Cell.Types.Tree;
             }
@@ -175,17 +191,14 @@ public class CA
             if ((Utils.NextInt() & 1023) == 0)
             {
                 // Slow acurate check
-                if (Utils.NextFloat() <= CAParams.SpontaneousFireProb * 1024f)
+                if (Utils.NextFloat() <= caparams.SpontaneousFireProb * 1024f)
                 {
-                    currentCell.SetOnFire();
+                    currentCell.SetOnFire(caparams.FireDuration);
                 }
             }
         }
 
-
-
         return currentCell;
-
     }
 
     public void Draw()
@@ -213,6 +226,7 @@ public class CA
     {
         int gridX = (int)globalPos.X / CAParams.CellSize;
         int gridY = (int)globalPos.Y / CAParams.CellSize;
-        Grid[gridX + gridY * CAParams.GridSizeX].SetOnFire();
+        Grid[gridX + gridY * CAParams.GridSizeX].SetOnFire(CAParams.FireDuration);
     }
+
 }

@@ -3,6 +3,9 @@ using Raylib_cs;
 namespace FireForest;
 
 
+public readonly record struct SnapshotParams(float SpontaneousFireProb, float TreeProb, float FireProb, int FireDuration);
+
+
 #pragma warning disable CA2211
 public static class CAParams
 {
@@ -18,6 +21,11 @@ public static class CAParams
     public static float SpontaneousFireProbBase = 0.000000001f;
     public static int SpontaneousFireProbMult = 5;
     public static float SpontaneousFireProb = SpontaneousFireProbBase * SpontaneousFireProbMult;
+
+    public static SnapshotParams GetSnapshotParams()
+    {
+        return new SnapshotParams(SpontaneousFireProb, TreeProb, FireProb, FireDuration);
+    }
 }
 
 public static class SimParams

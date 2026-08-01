@@ -76,11 +76,11 @@ public struct Cell
         return Raylib.ColorLerp(StartColors[(int)Type], FinalColors[(int)Type], value);
     }
 
-    public void SetOnFire()
+    public void SetOnFire(int fireDuration)
     {
         if (Type != Types.Tree) return;
 
         Type = Types.Fire;
-        Count = (ushort)CAParams.FireDuration;
+        Count = (ushort)fireDuration;
     }
 }
