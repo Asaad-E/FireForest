@@ -6,26 +6,27 @@ using Raylib_cs;
 using rlImGui_cs;
 using ImGuiNET;
 
-namespace FireForrest;
+namespace FireForest;
 
 
 static class Program
 {
 
     static int frameCount = 0;
-
     static readonly CA Ca = new();
 
     static bool ShowUi = true;
     static bool ShowFPS = true;
     static bool ShowGuide = true;
 
+    const float UIPadding = 20f;
+
     [System.STAThread]
     static void Main()
     {
         // init windows
-        Raylib.InitWindow(Params.ScreenSizeX, Params.ScreenSizeY, "Fire Forrest CA");
-        Raylib.SetTargetFPS(Params.FPS);
+        Raylib.InitWindow(SimParams.ScreenWidth, SimParams.ScreenHeight, "Fire Forrest CA");
+        Raylib.SetTargetFPS(SimParams.FPS);
 
         rlImGui.Setup(true);
         ImGui.SetNextWindowCollapsed(true);
@@ -45,7 +46,7 @@ static class Program
 
             if (Raylib.IsKeyPressed(KeyboardKey.Space))
             {
-                Ca.Reset();
+                Ca.Restart();
             }
 
             if (Raylib.IsKeyPressed(KeyboardKey.LeftControl))
@@ -63,7 +64,7 @@ static class Program
             Ca.Draw();
 
             // Update
-            if (frameCount >= Params.frameStep)
+            if (frameCount >= SimParams.FrameStep)
             {
                 frameCount = 0;
 
@@ -85,7 +86,7 @@ static class Program
 
             if (!ShowUi && ShowGuide)
             {
-                Raylib.DrawText($"Press Control to open the config or Space to Reset the World", 10, Params.ScreenSizeY - 20, 20, Color.White);
+                Raylib.DrawText($"Press Control to open the config or Space to Reset the World", 10, SimParams.ScreenHeight - 20, 20, Color.White);
             }
 
             if (ShowUi)
@@ -112,37 +113,51 @@ static class Program
 
         rlImGui.Begin();
 
-        ImGui.SetNextWindowPos(new Vector2(Params.ScreenSizeX - Params.UIPadding, Params.UIPadding), ImGuiCond.Always, new Vector2(1, 0));
+        ImGui.SetNextWindowPos(new Vector2(SimParams.ScreenWidth - UIPadding, UIPadding), ImGuiCond.Always, new Vector2(1, 0));
 
 
         if (ImGui.Begin("Options", ref ShowUi, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings))
-        {
+        {   
+            ImGui.SeparatorText("Simulation");
+
+            ImGui.Button("Stop");
+
+            if (ImGui.Button("Restart")){
+                Ca.Restart();
+            }
+
             ImGui.SeparatorText("Simulation Parametres");
-            ImGui.SliderInt("Simulation Steps: ", ref Params.frameStep, 1, 10);
-            if (ImGui.SliderFloat("Fire Expand Prob %", ref Params.fireProb, 0, 1))
+
+            ImGui.SliderInt("Simulation Steps: ", ref SimParams.FrameStep, 1, 10);
+
+            if (ImGui.SliderFloat("Fire Expand Prob %", ref CAParams.FireProb, 0, 1))
             {
-                Params.fireProb = MathF.Floor(Params.fireProb / 0.05f) * 0.05f;
+                CAParams.FireProb = MathF.Floor(CAParams.FireProb / 0.05f) * 0.05f;
             }
-            ImGui.SliderInt("Fire Duration: ", ref Params.fireDuration, 1, 80);
-            if (ImGui.SliderInt("Spontaneus Fire Mult", ref Params.spontaneousFireMult, 1, 20))
+
+            ImGui.SliderInt("Fire Duration: ", ref CAParams.FireDuration, 1, 80);
+
+            if (ImGui.SliderInt("Spontaneus Fire Mult", ref CAParams.SpontaneousFireProbMult, 1, 20))
             {
-                Params.spontaneousFireProb = Params.spontaneousFireProbBase * Params.spontaneousFireMult;
+                CAParams.SpontaneousFireProb = CAParams.SpontaneousFireProbBase * CAParams.SpontaneousFireProbMult;
             }
-            if (ImGui.SliderInt("Spontaneus Tree mult", ref Params.treeProbMult, 1, 20))
+
+            if (ImGui.SliderInt("Spontaneus Tree mult", ref CAParams.TreeProbMult, 1, 20))
             {
-                Params.treeProb = Params.treeProbBase * Params.treeProbMult;
+                CAParams.TreeProb = CAParams.TreeProbBase * CAParams.TreeProbMult;
             }
 
             ImGui.Checkbox("Show FPS", ref ShowFPS);
             ImGui.SameLine();
             ImGui.Checkbox("Show Guide", ref ShowGuide);
 
-            ImGui.SeparatorText("World Parametres");
-            if (ImGui.SliderFloat("Water Level", ref Params.waterLevel, 0, Params.rockLevel))
+            ImGui.SeparatorText("World Geenration Parametres");
+
+            if (ImGui.SliderFloat("Water Level", ref SimParams.WaterLevel, 0, SimParams.RockLevel))
             {
                 Ca.TerrainLevelChanged();
             }
-            if (ImGui.SliderFloat("Rock Level", ref Params.rockLevel, Params.waterLevel, 1))
+            if (ImGui.SliderFloat("Rock Level", ref SimParams.RockLevel, SimParams.WaterLevel, 1))
             {
                 Ca.TerrainLevelChanged();
 

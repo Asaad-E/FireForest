@@ -1,22 +1,21 @@
 
 using Raylib_cs;
 
-namespace FireForrest;
+namespace FireForest;
 
 
 public static class Utils
 {
     private static readonly Random rand = new();
-
     private static readonly FastNoiseLite noise = new();
 
     static Utils()
     {
         noise.SetNoiseType(FastNoiseLite.NoiseType.OpenSimplex2);
-        noise.SetFrequency(Params.noiseFrecuency);
+        noise.SetFrequency(SimParams.NoiseFrecuency);
 
         noise.SetFractalType(FastNoiseLite.FractalType.FBm);
-        noise.SetFractalOctaves(Params.noiseOctaves);
+        noise.SetFractalOctaves(SimParams.NoiseOctaves);
 
         SetRandomNoiseSeed();
     }

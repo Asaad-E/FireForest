@@ -2,95 +2,95 @@ using System;
 using System.Numerics;
 using Raylib_cs;
 
-namespace FireForrest;
+namespace FireForest;
 
 public class CA
 {
-    private Cell[] Grid = new Cell[Params.GridSizeX * Params.GridSizeY];
-    private Cell[] nextGrid = new Cell[Params.GridSizeX * Params.GridSizeY];
-
+    private Cell[] Grid = new Cell[CAParams.Totalcells];
+    private Cell[] nextGrid = new Cell[CAParams.Totalcells];
+    private static readonly (int, int)[] offsets = [(-1, 0), (1, 0), (0, -1), (0, 1)];
 
     // Variables for Fast draw
-    private Color[] pixelBuffer = new Color[Params.GridSizeX * Params.GridSizeY];
-    private Image image;
-    private Texture2D gridTexture;
+    private Color[] PixelBuffer = new Color[CAParams.Totalcells];
+    private Image Image;
+    private Texture2D GridTexture;
 
     public CA()
     {
-        Reset();
+        Restart();
 
         // Init
-        image = Raylib.GenImageColor(Params.GridSizeX, Params.GridSizeY, Color.Black);
-        gridTexture = Raylib.LoadTextureFromImage(image);
-        Raylib.SetTextureFilter(gridTexture, TextureFilter.Point);
+        Image = Raylib.GenImageColor(CAParams.GridSizeX, CAParams.GridSizeY, Color.Black);
+        GridTexture = Raylib.LoadTextureFromImage(Image);
+        Raylib.SetTextureFilter(GridTexture, TextureFilter.Point);
     }
 
 
-    public void Reset()
+    public void Restart()
     {
         Utils.SetRandomNoiseSeed();
 
-        for (int i = 0; i < Params.GridSizeX; i++)
+        for (int i = 0; i < CAParams.GridSizeX; i++)
         {
-            for (int j = 0; j < Params.GridSizeY; j++)
+            for (int j = 0; j < CAParams.GridSizeY; j++)
             {
-                Cell newCell = new(i, j);
-                int faltCoord = i + j * Params.GridSizeX;
+                Cell newCell = new();
+                int faltCoord = i + j * CAParams.GridSizeX;
 
-                float noise = (Utils.GetNoise(i * Params.CellSize, j * Params.CellSize) + 1f) / 2f;
+                float noise = (Utils.GetNoise(i * CAParams.CellSize, j * CAParams.CellSize) + 1f) / 2f;
 
 
                 // Cell initializatino
-                newCell.type = GetTypeFromLevel(noise);
-                newCell.elevationValue = noise;
+                newCell.Type = GetTypeFromLevel(noise);
+                newCell.ElevationValue = noise;
                 Grid[faltCoord] = newCell;
                 nextGrid[faltCoord] = newCell;
-                pixelBuffer[faltCoord] = newCell.GetColor(); 
+                PixelBuffer[faltCoord] = newCell.GetColor();
 
             }
         }
     }
 
-    public static int GetTypeFromLevel(float Level)
+    public static Cell.Types GetTypeFromLevel(float Level)
     {
         // Terrain segmentation
-        if (Level < Params.waterLevel)
+        if (Level < SimParams.WaterLevel)
         {
-            return Params.waterCode;
+            return Cell.Types.Water;
         }
-        else if (Level > Params.rockLevel)
+        else if (Level > SimParams.RockLevel)
         {
-            return Params.rockCode;
+            return Cell.Types.Rock;
         }
         else
         {
-            return Params.treeCode;
+            return Cell.Types.Tree;
         }
 
     }
 
     public void TerrainLevelChanged()
     {
-        for (int i = 0; i < Params.GridSizeX; i++)
+        for (int i = 0; i < CAParams.GridSizeX; i++)
         {
-            for (int j = 0; j < Params.GridSizeY; j++)
+            for (int j = 0; j < CAParams.GridSizeY; j++)
             {
-                int flatCoord = i + j * Params.GridSizeX;
+                int flatCoord = i + j * CAParams.GridSizeX;
 
-                float noise = (Utils.GetNoise(i * Params.CellSize, j * Params.CellSize) + 1f) / 2f;
+                float noise = (Utils.GetNoise(i * CAParams.CellSize, j * CAParams.CellSize) + 1f) / 2f;
 
                 // Terrain segmentation
-                int newType = GetTypeFromLevel(noise);
+                Cell.Types newType = GetTypeFromLevel(noise);
 
-                if (newType != Params.treeCode)
+                if (newType != Cell.Types.Tree)
                 {
-                    Grid[flatCoord].type = newType;
-                    nextGrid[flatCoord].type = newType;
+                    Grid[flatCoord].Type = newType;
+                    nextGrid[flatCoord].Type = newType;
                 }
-                else if (nextGrid[flatCoord].type == Params.rockCode || nextGrid[flatCoord].type == Params.waterCode)
+                else if (nextGrid[flatCoord].Type == Cell.Types.Rock || nextGrid[flatCoord].Type == Cell.Types.Water)
                 {
-                    Grid[flatCoord].type = newType;
-                    nextGrid[flatCoord].type = newType;
+                    Grid[flatCoord].Type = newType;
+                    nextGrid[flatCoord].Type = newType;
                 }
 
 
@@ -101,28 +101,101 @@ public class CA
 
     public void Update()
     {
-        Parallel.For(0, Params.GridSizeY, j =>
+        Parallel.For(0, CAParams.GridSizeY, j =>
         {
-            int offset = j * Params.GridSizeX;
-            for (int i = 0; i < Params.GridSizeX; i++)
+            int offset = j * CAParams.GridSizeX;
+            for (int i = 0; i < CAParams.GridSizeX; i++)
             {
-                Cell updatedCell = Grid[i + offset].Update(i, j, Grid);
+                Cell updatedCell = UpdateCell(i, j);
                 nextGrid[i + offset] = updatedCell;
-                // pixelBuffer[i + offset] = updatedCell.GetColor(); ;
+                PixelBuffer[i + offset] = updatedCell.GetColor();
             }
         });
 
         (Grid, nextGrid) = (nextGrid, Grid);
     }
 
+    public Cell UpdateCell(int x, int y)
+    {
+        Cell currentCell = Grid[x + y * CAParams.GridSizeX];
+
+        // Skip rock adn water cell
+        if (currentCell.Type == Cell.Types.Rock || currentCell.Type == Cell.Types.Water)
+        {
+            return currentCell;
+        }
+
+
+        int neighnorsTree = 1;
+        // Calculate influence of other cells
+        for (int i = 0; i < 4; i++)
+        {
+            (int dx, int dy) = offsets[i];
+            int newX = (x + dx + CAParams.GridSizeX) % CAParams.GridSizeX;
+            int newY = (y + dy + CAParams.GridSizeY) % CAParams.GridSizeY;
+
+
+            Cell.Types neighnorType = Grid[newX + newY * CAParams.GridSizeX].Type;
+
+
+            if (neighnorType == Cell.Types.Tree)
+            {
+                neighnorsTree += 1;
+            }
+            else if (currentCell.Type == Cell.Types.Tree && neighnorType == Cell.Types.Fire && Utils.NextFloat() <= CAParams.FireProb)
+            {
+                currentCell.SetOnFire();
+                break;
+            }
+        }
+
+        // Fire duration
+        if (currentCell.Type == Cell.Types.Fire)
+        {
+            if (--currentCell.Count <= 0)
+            {
+                currentCell.Type = Cell.Types.Calcined;
+            }
+            return currentCell;
+        }
+
+        // espotaneus tree
+        if (currentCell.Type == Cell.Types.Calcined)
+        {
+            if (Utils.NextFloat() <= CAParams.TreeProb * MathF.Pow(neighnorsTree, 4.2f))
+            {
+                currentCell.Type = Cell.Types.Tree;
+            }
+        }
+
+        // Logic of trees
+        if (currentCell.Type == Cell.Types.Tree)
+        {
+            // Fast siple check
+            if ((Utils.NextInt() & 1023) == 0)
+            {
+                // Slow acurate check
+                if (Utils.NextFloat() <= CAParams.SpontaneousFireProb * 1024f)
+                {
+                    currentCell.SetOnFire();
+                }
+            }
+        }
+
+
+
+        return currentCell;
+
+    }
+
     public void Draw()
     {
-        Raylib.UpdateTexture(gridTexture, pixelBuffer);
+        Raylib.UpdateTexture(GridTexture, PixelBuffer);
 
         Raylib.DrawTexturePro(
-        gridTexture,
-        new Rectangle(0, 0, Params.GridSizeX, Params.GridSizeY),
-        new Rectangle(0, 0, Params.ScreenSizeX, Params.ScreenSizeY),
+        GridTexture,
+        new Rectangle(0, 0, CAParams.GridSizeX, CAParams.GridSizeY),
+        new Rectangle(0, 0, SimParams.ScreenWidth, SimParams.ScreenHeight),
         Vector2.Zero,
         0.0f,
         Color.White
@@ -132,14 +205,14 @@ public class CA
 
     public void Close()
     {
-        Raylib.UnloadTexture(gridTexture);
-        Raylib.UnloadImage(image);
+        Raylib.UnloadTexture(GridTexture);
+        Raylib.UnloadImage(Image);
     }
 
     public void SetCellOnFire(Vector2 globalPos)
     {
-        int gridX = (int)globalPos.X / Params.CellSize;
-        int gridY = (int)globalPos.Y / Params.CellSize;
-        Grid[gridX + gridY * Params.GridSizeX].SetOnFire();
+        int gridX = (int)globalPos.X / CAParams.CellSize;
+        int gridY = (int)globalPos.Y / CAParams.CellSize;
+        Grid[gridX + gridY * CAParams.GridSizeX].SetOnFire();
     }
 }
