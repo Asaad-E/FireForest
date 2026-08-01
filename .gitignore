@@ -1,0 +1,7 @@
+#Buils
+bin/
+obj/
+
+#imgui
+*.ini
+
