@@ -1,10 +1,8 @@
 using Raylib_cs;
 
-namespace FireForest;
-
+namespace FireForest.Core;
 
 public readonly record struct SnapshotParams(float SpontaneousFireProb, float TreeProb, float SoilProb, float FireProb, int FireDuration);
-
 
 #pragma warning disable CA2211
 public static class CAParams

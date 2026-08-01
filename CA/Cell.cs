@@ -3,7 +3,9 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using Raylib_cs;
 
-namespace FireForest;
+using FireForest.Core;
+
+namespace FireForest.CA;
 
 public struct Cell
 {

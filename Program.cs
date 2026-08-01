@@ -1,24 +1,23 @@
-﻿using System;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Numerics;
 using Raylib_cs;
-
 using rlImGui_cs;
 using ImGuiNET;
 
-namespace FireForest;
+using FireForest.Core;
+using FireForest.CA;
 
+namespace FireForest;
 
 static class Program
 {
-
     static int frameCount = 0;
-    static readonly CA Ca = new();
+    static readonly CAEnv Ca = new();
 
     // UI States
     static bool ShowUi = true;
     static bool ShowFPS = true;
-    static bool ShowGuide = true;
+    static bool ShowGuide = false;
     static bool Stop = false;
     const float UIPadding = 20f;
 
@@ -145,16 +144,19 @@ static class Program
 
         }
 
+
+        // Close launcher 
         rlImGui.Shutdown();
         Raylib.CloseWindow();
+
+        // Update Global parameters;
 
         CAParams.GridSizeX = SimParams.SimulationWidth;
         CAParams.GridSizeY = SimParams.SimulationHeight;
         CAParams.Totalcells = CAParams.GridSizeX * CAParams.GridSizeY;
 
-        // Start loadign the CA
+        // Start loadign the CA before the mainn windows start
         Ca.Setup();
-
 
         return Open;
     }
@@ -169,17 +171,15 @@ static class Program
 
     static void MainLoop()
     {
-        // init windows
+        // Initialize Raylib and IMGUI
         Raylib.InitWindow(SimParams.ScreenWidth, SimParams.ScreenHeight, "Fire Forrest CA");
         Raylib.SetTargetFPS(SimParams.FPS);
 
         rlImGui.Setup(true);
         ImGui.SetNextWindowCollapsed(true);
+        ImGuiIOPtr io = ImGui.GetIO();
 
-
-
-        var io = ImGui.GetIO();
-        // init Camera
+        // Initialize Camera
         Camera.Target = new Vector2(SimParams.SimulationWidth * CAParams.CellSize / 2f, SimParams.SimulationHeight * CAParams.CellSize / 2f);
         Camera.Offset = new Vector2(SimParams.ScreenWidth / 2, SimParams.ScreenHeight / 2);
 
@@ -188,18 +188,18 @@ static class Program
 
         SimParams.MinZoom = SimParams.ScreenHeight / (float)SimParams.SimulationHeight;
 
-        // init ca
+        // Initialize the texture of the CA
 
         Ca.LoadTextures();
 
-        // Game loop
+        // --------------------------- Game loop ---------------------------
         while (!Raylib.WindowShouldClose())
         {
-            // New frame
+            // --------------------------- New frame ---------------------------
 
             float deltatime = Raylib.GetFrameTime();
 
-            // Controls
+            // --------------------------- Controls ---------------------------
             if (Raylib.IsKeyPressed(KeyboardKey.Space))
             {
                 Ca.Restart();
@@ -227,20 +227,17 @@ static class Program
 
             Camera.Zoom = MathF.Max(MathF.Exp(Raylib.GetMouseWheelMove() * 0.1f + MathF.Log(Camera.Zoom)), SimParams.MinZoom);
 
-            // Clamp the camera it case of move or change of zoom
+            // Clamp the camera in case of drag or change of zoom
             if (Raylib.IsMouseButtonDown(MouseButton.Left) || Raylib.GetMouseWheelMove() != 0)
             {
                 ClampCamera();
             }
 
-            // Draw
+            // --------------------------- Draw ---------------------------
 
             Raylib.BeginDrawing();
             Raylib.ClearBackground(Color.Black);
-
             Raylib.BeginMode2D(Camera);
-
-            // Draw Grid
 
             // If terrain is changed, recalculate colors
             if (Ca.TerrainChanged)
@@ -258,7 +255,7 @@ static class Program
 
             Raylib.EndMode2D();
 
-            // Text
+            // --------------------------- UI ---------------------------
             if (ShowFPS)
             {
                 Raylib.DrawRectangle(15, 15, 115, 28, Color.Black);
@@ -279,7 +276,7 @@ static class Program
 
             frameCount++;
 
-            // Update
+            // --------------------------- Update ---------------------------
             if (frameCount >= SimParams.FrameStep && !Stop)
             {
                 frameCount = 0;
@@ -397,6 +394,14 @@ static class Program
             ImGui.Checkbox("Show FPS", ref ShowFPS);
             ImGui.SameLine();
             ImGui.Checkbox("Show Guide", ref ShowGuide);
+
+            ImGui.SameLine();
+
+            ImGui.SetCursorPosX(ImGui.GetWindowWidth() - 70);
+            if (ImGui.Button("Close", new Vector2(50, 0)))
+            {
+                ShowUi = !ShowUi;
+            }
         }
 
         ImGui.End();

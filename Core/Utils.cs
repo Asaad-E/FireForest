@@ -1,8 +1,7 @@
 
 using Raylib_cs;
 
-namespace FireForest;
-
+namespace FireForest.Core;
 
 public static class Utils
 {

@@ -2,9 +2,11 @@ using System;
 using System.Numerics;
 using Raylib_cs;
 
-namespace FireForest;
+using FireForest.Core;
 
-public class CA
+namespace FireForest.CA;
+
+public class CAEnv
 {
     private Cell[] Grid = [];
     private Cell[] nextGrid = [];
@@ -17,7 +19,7 @@ public class CA
 
     public bool TerrainChanged = false;
 
-    public CA() { }
+    public CAEnv() { }
 
     public void Setup()
     {
