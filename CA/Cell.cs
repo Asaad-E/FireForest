@@ -87,14 +87,14 @@ public struct Cell
 
         Type = Types.Fire;
         // use a Log normal distribution for the fire duration
-        float std = 0.1f;
-        float u = MathF.Log(fireDuration) - std * std / 2;
-        float value = MathF.Exp(u + std * Utils.NextGaussian());
+        double std = 0.1;
+        double u = Math.Log(fireDuration) - std * std / 2;
+        double value = Math.Exp(u + std * Utils.NextGaussian());
 
         // Use fuel capacity more a offset to afect the duration (more fuel = more duration)
-        value *= (FuelCapacity + 0.2f);
+        value = Math.Round((FuelCapacity + 0.2f) * value);
 
-        Count = (short)MathF.Max(value, 1);
-        Duration = (short)value;
+        Count = (short)Math.Clamp(value, 1, 32767);
+        Duration = Count;
     }
 }

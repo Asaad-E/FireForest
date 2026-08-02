@@ -1,4 +1,5 @@
 
+using System.Runtime.CompilerServices;
 using Raylib_cs;
 
 namespace FireForest.Core;
@@ -58,16 +59,16 @@ public static class Utils
     }
 
 
-    public static float NextGaussian()
+    public static double NextGaussian()
     {
         // Box-Muller transform for generate a quick Noraml variable
-        float u1 = 1.0f - Random.Shared.NextSingle();
-        float u2 = 1.0f - Random.Shared.NextSingle();
-        float randNormal = MathF.Sqrt(-2.0f * MathF.Log(u1)) * MathF.Sin(-2.0f * MathF.PI * u2);
+        double u1 = 1.0f - Random.Shared.NextDouble();
+        double u2 = 1.0f - Random.Shared.NextDouble();
+        double randNormal = Math.Sqrt(-2.0 * Math.Log(u1)) * Math.Sin(-2.0 * Math.PI * u2);
 
         return randNormal;
     }
-
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static float EasingFunctionFuel(float fuelCapacity)
     {
         if (fuelCapacity < 1)

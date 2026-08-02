@@ -8,6 +8,9 @@
     <Nullable>enable</Nullable>
 
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
+    <ServerGarbageCollection>true</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
 <DebugType>embedded</DebugType>
 
     <!-- Single File Packaging Settings -->
