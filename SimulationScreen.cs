@@ -46,7 +46,7 @@ public class SimulationScreen : IScreen
         Raylib.SetWindowPosition(posX, posY);
 
         // Initialize Camera
-        Camera.Target = new Vector2(SimParams.SimulationWidth * CAParams.CellSize / 2f, SimParams.SimulationHeight * CAParams.CellSize / 2f);
+        Camera.Target = new Vector2(SimParams.SimulationWidth / 2f, SimParams.SimulationHeight / 2f);
         Camera.Offset = new Vector2(SimParams.ScreenWidth / 2, SimParams.ScreenHeight / 2);
 
         Camera.Zoom = 1;

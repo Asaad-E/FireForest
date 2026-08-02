@@ -7,10 +7,9 @@ public readonly record struct SnapshotParams(float SpontaneousFireProb, float Tr
 #pragma warning disable CA2211
 public static class CAParams
 {
-    public const int CellSize = 1;
-    public static int GridSizeX = 1;
-    public static int GridSizeY = 1;
-    public static int Totalcells = 1;
+    public static int GridSizeX = 100;
+    public static int GridSizeY = 100;
+    public static int Totalcells = 10000;
     public static int FireDuration = 40;
     public static float FireProb = 0.25f;
 
