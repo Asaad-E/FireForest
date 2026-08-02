@@ -49,7 +49,7 @@ public static class Utils
 
     public static float GetNoise(float x, float y)
     {
-        return ElevationNoise.GetNoise(x, y);
+        return (ElevationNoise.GetNoise(x, y) + 1f) / 2f;
     }
 
     public static float GetFuelNoise(float x, float y)
@@ -74,11 +74,11 @@ public static class Utils
         {
             return MathF.Pow(fuelCapacity, 3.2f);
         }
-        else if(fuelCapacity < 1.5f)
+        else if (fuelCapacity < 1.5f)
         {
             return MathF.Pow(fuelCapacity, 0.7f);
         }
-        else 
+        else
         {
             return MathF.Pow(fuelCapacity, 1.5f);
         }

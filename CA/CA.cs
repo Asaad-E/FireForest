@@ -3,11 +3,16 @@ using System.Numerics;
 using Raylib_cs;
 
 using FireForest.Core;
+using System.Collections.Concurrent;
 
 namespace FireForest.CA;
 
 public class CAEnv
 {
+    private int Totalcells;
+    private int GridSizeX;
+    private int GridSizeY;
+
     private Cell[] Grid = [];
     private Cell[] nextGrid = [];
     private static readonly (int, int)[] offsets = [(-1, 0), (1, 0), (0, -1), (0, 1)];
@@ -16,17 +21,17 @@ public class CAEnv
     private Color[] PixelBuffer = [];
     private Image Image;
     private Texture2D GridTexture;
-
-    public bool TerrainChanged = false;
-
-    public CAEnv() { }
-
-    public void Setup()
+    public void Setup(int gridSizeX, int gridSizeY)
     {
+        Totalcells = gridSizeX * gridSizeY;
+
+        GridSizeX = gridSizeX;
+        GridSizeY = gridSizeY;
+
         // Re seize the world arrays
-        Grid = new Cell[CAParams.Totalcells];
-        nextGrid = new Cell[CAParams.Totalcells];
-        PixelBuffer = new Color[CAParams.Totalcells];
+        Grid = new Cell[Totalcells];
+        nextGrid = new Cell[Totalcells];
+        PixelBuffer = new Color[Totalcells];
 
         // init
         ReGenerate();
@@ -35,7 +40,7 @@ public class CAEnv
     public void LoadTextures()
     {
         // Init
-        Image = Raylib.GenImageColor(CAParams.GridSizeX, CAParams.GridSizeY, Color.Black);
+        Image = Raylib.GenImageColor(GridSizeX, GridSizeY, Color.Black);
         GridTexture = Raylib.LoadTextureFromImage(Image);
         Raylib.SetTextureFilter(GridTexture, TextureFilter.Point);
     }
@@ -48,17 +53,15 @@ public class CAEnv
     }
     public void Restart()
     {
-        Parallel.For(0, CAParams.GridSizeY, j =>
+        Parallel.For(0, GridSizeY, j =>
         {
-            for (int i = 0; i < CAParams.GridSizeX; i++)
+            for (int i = 0; i < GridSizeX; i++)
             {
                 Cell newCell = new();
-                int faltCoord = i + j * CAParams.GridSizeX;
+                int faltCoord = i + j * GridSizeX;
 
-                float noise = (Utils.GetNoise(i * CAParams.CellSize, j * CAParams.CellSize) + 1f) / 2f;
-                float fuelCapacity = Utils.GetFuelNoise(i * CAParams.CellSize, j * CAParams.CellSize);
-
-                // Console.WriteLine(fuelCapacity);
+                float noise = Utils.GetNoise(i, j);
+                float fuelCapacity = Utils.GetFuelNoise(i, j);
 
                 // Cell initializatino
                 newCell.Type = GetTypeFromLevel(noise);
@@ -92,57 +95,63 @@ public class CAEnv
 
     public void ChangeTerrain()
     {
-        Parallel.For(0, CAParams.GridSizeY, j =>
+        int gridSizeY = GridSizeY;
+        int gridSizeX = GridSizeX;
+
+        Parallel.For(0, gridSizeY, j =>
         {
-            for (int i = 0; i < CAParams.GridSizeX; i++)
+            for (int i = 0; i < gridSizeX; i++)
             {
-                int flatCoord = i + j * CAParams.GridSizeX;
+                int flatCoord = i + j * gridSizeX;
 
-                float elevation = (Utils.GetNoise(i * CAParams.CellSize, j * CAParams.CellSize) + 1f) / 2f;
+                float elevation = Utils.GetNoise(i, j);
 
-                // Terrain segmentation
+                // Calculate new terrain
                 Cell.Types newType = GetTypeFromLevel(elevation);
 
+                // Only update when the new type it is rock/water, or when a tree reaplce a roock/water;
                 if (newType != Cell.Types.Tree)
                 {
                     Grid[flatCoord].Type = newType;
-                    nextGrid[flatCoord].Type = newType;
                 }
                 else if (Grid[flatCoord].Type == Cell.Types.Rock || Grid[flatCoord].Type == Cell.Types.Water)
                 {
                     Grid[flatCoord].Type = newType;
-                    nextGrid[flatCoord].Type = newType;
                 }
 
+                // Always change the elevation value and recalculate the pixel buffer
                 Grid[flatCoord].ElevationValue = elevation;
-                nextGrid[flatCoord].ElevationValue = elevation;
                 PixelBuffer[flatCoord] = Grid[flatCoord].GetColor();
-
-
             }
         });
     }
 
-    public void Update()
+    public void Update(SnapshotParams caparams)
     {
-        if (TerrainChanged) return;
+        SnapshotParams currentParams = caparams;
 
-        SnapshotParams caparams = CAParams.GetSnapshotParams();
+        int gridSizeY = GridSizeY;
+        int gridSizeX = GridSizeX;
 
-        Parallel.For(0, CAParams.GridSizeY, j =>
+        var rangePartitioner = Partitioner.Create(0, gridSizeY);
+
+        Parallel.ForEach(rangePartitioner, range =>
         {
-            int offset = j * CAParams.GridSizeX;
-            for (int i = 0; i < CAParams.GridSizeX; i++)
+            for (int j = range.Item1; j < range.Item2; j++)
             {
-                Cell updatedCell = UpdateCell(i, j, in caparams);
-                nextGrid[i + offset] = updatedCell;
-
-                // Only update the color when a changed of type occurs or it's fire
-                if (updatedCell.Type != Grid[i + offset].Type || updatedCell.Type == Cell.Types.Fire)
+                int offset = j * GridSizeX;
+                for (int i = 0; i < GridSizeX; i++)
                 {
-                    PixelBuffer[i + offset] = updatedCell.GetColor();
-                }
+                    Cell updatedCell = UpdateCell(i, j, in currentParams);
+                    nextGrid[i + offset] = updatedCell;
 
+                    // Only update the color when a changed of type occurs or it's fire
+                    if (updatedCell.Type != Grid[i + offset].Type || updatedCell.Type == Cell.Types.Fire)
+                    {
+                        PixelBuffer[i + offset] = updatedCell.GetColor();
+                    }
+
+                }
             }
         });
 
@@ -151,7 +160,7 @@ public class CAEnv
 
     public Cell UpdateCell(int x, int y, in SnapshotParams caparams)
     {
-        Cell currentCell = Grid[x + y * CAParams.GridSizeX];
+        Cell currentCell = Grid[x + y * GridSizeX];
 
         // Skip rock adn water cell
         if (currentCell.Type == Cell.Types.Rock || currentCell.Type == Cell.Types.Water)
@@ -177,11 +186,11 @@ public class CAEnv
         for (int i = 0; i < 4; i++)
         {
             (int dx, int dy) = offsets[i];
-            int newX = (x + dx + CAParams.GridSizeX) % CAParams.GridSizeX;
-            int newY = (y + dy + CAParams.GridSizeY) % CAParams.GridSizeY;
+            int newX = (x + dx + GridSizeX) % GridSizeX;
+            int newY = (y + dy + GridSizeY) % GridSizeY;
 
 
-            Cell.Types neighnorType = Grid[newX + newY * CAParams.GridSizeX].Type;
+            Cell.Types neighnorType = Grid[newX + newY * GridSizeX].Type;
 
 
 
@@ -238,14 +247,14 @@ public class CAEnv
         return currentCell;
     }
 
-    public void Draw()
+    public void Draw(int width, int height)
     {
         Raylib.UpdateTexture(GridTexture, PixelBuffer);
 
         Raylib.DrawTexturePro(
         GridTexture,
-        new Rectangle(0, 0, CAParams.GridSizeX, CAParams.GridSizeY),
-        new Rectangle(0, 0, SimParams.SimulationWidth * CAParams.CellSize, SimParams.SimulationHeight * CAParams.CellSize),
+        new Rectangle(0, 0, GridSizeX, GridSizeY),
+        new Rectangle(0, 0, width, height),
         Vector2.Zero,
         0.0f,
         Color.White
@@ -259,13 +268,13 @@ public class CAEnv
         Raylib.UnloadImage(Image);
     }
 
-    public void SetCellOnFire(Vector2 globalPos)
+    public void SetCellOnFire(Vector2 globalPos, int fireDuration)
     {
-        int gridX = (int)globalPos.X / CAParams.CellSize;
-        int gridY = (int)globalPos.Y / CAParams.CellSize;
+        int gridX = (int)globalPos.X;
+        int gridY = (int)globalPos.Y;
 
         // return ;
-        Grid[gridX + gridY * CAParams.GridSizeX].SetOnFire(CAParams.FireDuration);
+        Grid[gridX + gridY * GridSizeX].SetOnFire(fireDuration);
     }
 
 }
