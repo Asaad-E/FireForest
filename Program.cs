@@ -179,6 +179,11 @@ static class Program
         ImGui.SetNextWindowCollapsed(true);
         ImGuiIOPtr io = ImGui.GetIO();
 
+        // Shader
+
+        RenderTexture2D target = Raylib.LoadRenderTexture(SimParams.ScreenWidth, SimParams.ScreenHeight);
+        Shader shader = Raylib.LoadShader(null, "bloom.fs");
+
         // Initialize Camera
         Camera.Target = new Vector2(SimParams.SimulationWidth * CAParams.CellSize / 2f, SimParams.SimulationHeight * CAParams.CellSize / 2f);
         Camera.Offset = new Vector2(SimParams.ScreenWidth / 2, SimParams.ScreenHeight / 2);
@@ -233,11 +238,6 @@ static class Program
                 ClampCamera();
             }
 
-            // --------------------------- Draw ---------------------------
-
-            Raylib.BeginDrawing();
-            Raylib.ClearBackground(Color.Black);
-            Raylib.BeginMode2D(Camera);
 
             // If terrain is changed, recalculate colors
             if (Ca.TerrainChanged)
@@ -247,15 +247,33 @@ static class Program
                 Ca.TerrainChanged = false;
             }
 
+            // --------------------------- Draw ---------------------------
+
+            Raylib.BeginTextureMode(target);
+            Raylib.ClearBackground(Color.Black);
+            Raylib.BeginMode2D(Camera);
+
             long startDraw = Stopwatch.GetTimestamp();
-
             Ca.Draw();
-
             TimeSpan ElapsedTimeDraw = Stopwatch.GetElapsedTime(startDraw);
 
             Raylib.EndMode2D();
+            Raylib.EndTextureMode();
 
             // --------------------------- UI ---------------------------
+
+            Raylib.BeginDrawing();
+            Raylib.ClearBackground(Color.Black);
+
+            Raylib.BeginShaderMode(shader);
+            Raylib.DrawTextureRec(
+                target.Texture,
+                new Rectangle(0, 0, target.Texture.Width, -target.Texture.Height),
+                Vector2.Zero,
+                Color.White
+            );
+            Raylib.EndShaderMode();
+
             if (ShowFPS)
             {
                 Raylib.DrawRectangle(15, 15, 115, 28, Color.Black);
@@ -293,6 +311,7 @@ static class Program
 
             }
         }
+
 
         Ca.Close();
         rlImGui.Shutdown();
