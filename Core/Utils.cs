@@ -34,8 +34,11 @@ public static class Utils
 
     public static void SetRandomNoiseSeed()
     {
-        ElevationNoise.SetSeed(NextInt());
-        FuelNoise.SetSeed(NextInt());
+        // ElevationNoise.SetSeed(NextInt());
+        // FuelNoise.SetSeed(NextInt());
+
+        ElevationNoise.SetSeed(2);
+        FuelNoise.SetSeed(2);
     }
 
     public static float NextFloat()

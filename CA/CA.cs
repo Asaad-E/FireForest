@@ -14,8 +14,16 @@ public class CAEnv
     private int GridSizeX;
     private int GridSizeY;
 
+    private int ChunkSize;
+    private int ChunkSizeX;
+    private int ChunkSizeY;
+
     private Cell[] Grid = [];
     private Cell[] nextGrid = [];
+
+    private bool[] ChunkActive = [];
+    private bool[] NextChunkActive = [];
+
     private static readonly (int, int)[] offsets = [(-1, 0), (1, 0), (0, -1), (0, 1)];
 
     // Variables for Fast draw
@@ -26,12 +34,22 @@ public class CAEnv
     {
         // Set CA grid
         TotalCells = gridSizeX * gridSizeY;
+
         GridSizeX = gridSizeX;
         GridSizeY = gridSizeY;
+
+        ChunkSizeX = (int)Math.Ceiling(GridSizeX / 16f);
+        ChunkSizeY = (int)Math.Ceiling(GridSizeY / 16f);
+
+        ChunkSize = ChunkSizeX * ChunkSizeY;
 
         // Reseize the world arrays
         Grid = new Cell[TotalCells];
         nextGrid = new Cell[TotalCells];
+
+        ChunkActive = new bool[ChunkSize];
+        NextChunkActive = new bool[ChunkSize];
+
         PixelBuffer = new Color[TotalCells];
 
         // init
@@ -143,6 +161,9 @@ public class CAEnv
 
         var rangePartitioner = Partitioner.Create(0, gridSizeY);
 
+        // Set desactive all chunk at the start of the new frame
+        Array.Clear(NextChunkActive);
+
         Parallel.ForEach(rangePartitioner, range =>
         {
             for (int j = range.Item1; j < range.Item2; j++)
@@ -152,6 +173,11 @@ public class CAEnv
                 {
                     Cell updatedCell = UpdateCell(i, j, in currentParams);
                     nextGrid[i + offset] = updatedCell;
+
+                    if (updatedCell.Type == Cell.Types.Fire)
+                    {
+                        NextChunkActive[GetChunkFlatCoord(i, j)] = true;
+                    }
 
                     // Only update the color when a changed of type occurs or it's fire
                     if (updatedCell.Type != Grid[i + offset].Type || updatedCell.Type == Cell.Types.Fire)
@@ -163,7 +189,9 @@ public class CAEnv
             }
         });
 
+        // Swap the buffers
         (Grid, nextGrid) = (nextGrid, Grid);
+        (ChunkActive, NextChunkActive) = (NextChunkActive, ChunkActive);
 
     }
     public Cell UpdateCell(int x, int y, in SnapshotParams caparams)
@@ -186,6 +214,20 @@ public class CAEnv
             return currentCell;
         }
 
+        if (currentCell.Type == Cell.Types.Tree)
+        {
+            // Fast siple check
+            if ((Utils.NextInt() & 1023) == 0)
+            {
+                // Slow accurate check
+                if (Utils.NextFloat() <= caparams.SpontaneousFireProb * 1024f)
+                {
+                    currentCell.SetOnFire(caparams.FireDuration);
+                }
+            }
+        }
+
+        if (currentCell.Type == Cell.Types.Tree && !IsNeighborhoodActive(x, y)) return currentCell;
 
         int neighborsTree = 1;
         int neighborsSoil = 1;
@@ -197,11 +239,11 @@ public class CAEnv
             int newX = x + dx;
             int newY = y + dy;
 
-            if(newX < 0) newX += GridSizeX;
-            if(newX >= GridSizeX) newX -= GridSizeX;
+            if (newX < 0) newX += GridSizeX;
+            if (newX >= GridSizeX) newX -= GridSizeX;
 
-            if(newY < 0) newY += GridSizeY;
-            if(newY >= GridSizeY) newY -= GridSizeY;
+            if (newY < 0) newY += GridSizeY;
+            if (newY >= GridSizeY) newY -= GridSizeY;
 
             Cell.Types neighnorType = Grid[newX + newY * GridSizeX].Type;
 
@@ -231,7 +273,6 @@ public class CAEnv
                 currentCell.Type = Cell.Types.Soil;
             }
         }
-
         // Soil Type
         else if (currentCell.Type == Cell.Types.Soil)
         {
@@ -240,21 +281,6 @@ public class CAEnv
                 currentCell.Type = Cell.Types.Tree;
             }
         }
-
-        // Tree Type
-        else if (currentCell.Type == Cell.Types.Tree)
-        {
-            // Fast siple check
-            if ((Utils.NextInt() & 1023) == 0)
-            {
-                // Slow accurate check
-                if (Utils.NextFloat() <= caparams.SpontaneousFireProb * 1024f)
-                {
-                    currentCell.SetOnFire(caparams.FireDuration);
-                }
-            }
-        }
-
         return currentCell;
     }
     public void Draw(int width, int height)
@@ -283,5 +309,44 @@ public class CAEnv
 
         Grid[gridX + gridY * GridSizeX].SetOnFire(fireDuration);
     }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
 
+    public (int, int) GetChunkCoord(int x, int y)
+    {
+        return (x >> CAParams.Shitf, y >> CAParams.Shitf);
+    }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+
+    public int GetChunkFlatCoord(int x, int y)
+    {
+        (int cx, int cy) = GetChunkCoord(x, y);
+        return cx + cy * ChunkSizeX;
+    }
+
+    public bool IsNeighborhoodActive(int x, int y)
+    {
+        (int cx, int cy) = GetChunkCoord(x, y);
+
+        // Current chunk
+        if (ChunkActive[cx + cy * ChunkSizeX]) return true;
+
+        // Neighbors chunks
+        for (int i = 0; i < 4; i++)
+        {
+            (int dx, int dy) = offsets[i];
+
+            int newX = cx + dx;
+            int newY = cy + dy;
+
+            if (newX < 0) { newX += ChunkSizeX; }
+            else if (newX >= ChunkSizeX) { newX -= ChunkSizeX; }
+
+            if (newY < 0) { newY += ChunkSizeY; }
+            else if (newY >= ChunkSizeY) { newY -= ChunkSizeY; }
+
+            if (ChunkActive[newX + newY * ChunkSizeX]) return true;
+        }
+
+        return false;
+    }
 }

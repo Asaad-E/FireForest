@@ -29,6 +29,8 @@ public static class CAParams
     public static int SpontaneousFireProbMult = 5;
     public static float SpontaneousFireProb = SpontaneousFireProbBase * SpontaneousFireProbMult;
 
+    public static int Shitf = 4;
+
     public static SnapshotParams GetSnapshotParams()
     {
         return new SnapshotParams(SpontaneousFireProb, TreeProb, SoilProb, FireProb, FireDuration);
@@ -44,7 +46,7 @@ public static class SimParams
 
     public static int ScreenWidth = 1280;
     public static int ScreenHeight = 720;
-    public static int SimulationHeight = 1500;
+    public static int SimulationHeight = 900;
 
     public static int SimulationWidth = SimulationHeight * ScreenWidth / ScreenHeight;
 
@@ -53,14 +55,13 @@ public static class SimParams
     public static int MaxSimulationHeight = 5500;
 
 
-
     public static float MinZoom = ScreenHeight / (float)SimulationHeight;
 
 
-    public static float NoiseFrecuency = 0.002f;
+    public static float NoiseFrecuency = 0.003f;
     public static int NoiseOctaves = 5;
-    public const int FPS = 60;
-    public static int FrameStep = 1;
+    public const int FPS = 30;
+    public static int SimulationSpeed = 1;
     public static float WaterLevel = 0.4f;
     public static float RockLevel = 0.7f;
 }

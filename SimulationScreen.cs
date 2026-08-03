@@ -19,7 +19,6 @@ public class SimulationScreen : IScreen
 
     private readonly CAEnv Ca;
     private readonly HUD Hud;
-    private int frameCount = 0;
 
     // UI States
     const float UIPadding = 20f;
@@ -117,23 +116,23 @@ public class SimulationScreen : IScreen
         {
             Ca.ChangeTerrain();
             TerrainChanged = false;
-            Hud.Stop = false;
             return;
         }
 
-        frameCount++;
-        if (frameCount >= SimParams.FrameStep && !Hud.Stop)
+        if (!Hud.Stop)
         {
-            frameCount = 0;
-
             long startUpdate = Stopwatch.GetTimestamp();
 
-            Ca.Update(CAParams.GetSnapshotParams());
+            for (int i = 0; i < SimParams.SimulationSpeed; i++)
+            {
+
+                Ca.Update(CAParams.GetSnapshotParams());
+
+
+            }
 
             TimeSpan ElapsedTimeUpdate = Stopwatch.GetElapsedTime(startUpdate);
-
             Console.WriteLine(ElapsedTimeUpdate.TotalMilliseconds);
-
         }
 
     }
@@ -162,7 +161,6 @@ public class SimulationScreen : IScreen
     {
         Utils.SetupNoiseParams();
         TerrainChanged = true;
-        Hud.Stop = true;
     }
 
     private void ClampCamera()

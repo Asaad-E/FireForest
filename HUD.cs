@@ -16,7 +16,10 @@ class HUD(Vector2 pos)
     public bool ShowUi = true;
     public bool ShowFPS = true;
     public bool ShowGuide = false;
-    public bool Stop = false;
+    public bool Stop => Pause || Hold;
+
+    private bool Pause = false;
+    private bool Hold = false;
     public bool AutoStop = false;
 
     public event Action? RestartCAResquested;
@@ -41,6 +44,14 @@ class HUD(Vector2 pos)
             Raylib.DrawText($"Press Control to open the config or Space to Reset the World", 10, SimParams.ScreenHeight - 20, 20, Color.White);
         }
 
+        var IO = ImGui.GetIO();
+
+        if (Hold)
+        {
+            Hold = false;
+        }
+
+
         // IMGUI
         if (!ShowUi) return;
 
@@ -52,9 +63,9 @@ class HUD(Vector2 pos)
             //---------- Simulation Buttoms ----------
             ImGui.SeparatorText("Simulation");
 
-            if (ImGui.Button(Stop ? "Play" : "Stop"))
+            if (ImGui.Button(Stop ? "Play" : "Pause"))
             {
-                Stop = !Stop;
+                Pause = !Pause;
             }
 
             ImGui.SameLine();
@@ -69,7 +80,7 @@ class HUD(Vector2 pos)
 
             ImGui.SeparatorText("Simulation Params");
 
-            ImGui.SliderInt("Sim Speed ", ref SimParams.FrameStep, 1, 10);
+            ImGui.SliderInt("Sim Speed ", ref SimParams.SimulationSpeed, 1, 10);
 
             if (ImGui.SliderFloat("Fire Expand Prob %", ref CAParams.FireProb, 0, 1))
             {
@@ -95,6 +106,8 @@ class HUD(Vector2 pos)
 
 
             //---------- World Generation Params ----------
+
+            ImGui.BeginGroup();
             ImGui.SeparatorText("World Generation Params");
 
             bool terrainChanged = false;
@@ -102,6 +115,14 @@ class HUD(Vector2 pos)
             terrainChanged |= ImGui.SliderFloat("Rock Level", ref SimParams.RockLevel, SimParams.WaterLevel, 1);
             terrainChanged |= ImGui.SliderFloat("Frecuency", ref SimParams.NoiseFrecuency, 0.001f, 0.007f);
             terrainChanged |= ImGui.SliderInt("Octaves", ref SimParams.NoiseOctaves, 1, 10);
+
+            ImGui.EndGroup();
+
+            if (ImGui.IsItemHovered() && IO.WantCaptureMouse && Raylib.IsMouseButtonDown(MouseButton.Left))
+            {
+                Hold = true;
+            }
+
 
             if (terrainChanged) TerrainChangedResquested?.Invoke();
 
