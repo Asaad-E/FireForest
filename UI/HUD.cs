@@ -7,15 +7,17 @@ using ImGuiNET;
 using FireForest.Core;
 using FireForest.CA;
 
-namespace FireForest;
+namespace FireForest.UI;
 
-
-class HUD(Vector2 pos)
+class HUD
 {
-    private Vector2 Position = pos;
+    private Vector2 Position;
+    public PlotWidget Plot = new();
+
     public bool ShowUi = true;
     public bool ShowFPS = true;
     public bool ShowGuide = false;
+    public bool ShowPlot = true;
     public bool Stop => Pause || Hold;
 
     private bool Pause = false;
@@ -27,7 +29,12 @@ class HUD(Vector2 pos)
     public event Action? ZoomOutResquested;
     public event Action? ZoomResetResquested;
     public event Action? TerrainChangedResquested;
+    public event Action? FullscreenResquested;
 
+    public void SetPosition(Vector2 pos)
+    {
+        Position = pos;
+    }
 
     public void Draw()
     {
@@ -50,6 +57,9 @@ class HUD(Vector2 pos)
         {
             Hold = false;
         }
+
+        // Plot
+        if (ShowPlot) Plot.Draw();
 
 
         // IMGUI
@@ -75,6 +85,8 @@ class HUD(Vector2 pos)
             if (ImGui.Button("Zoom Out")) ZoomOutResquested?.Invoke();
             ImGui.SameLine();
             if (ImGui.Button("Reset Zoom")) ZoomResetResquested?.Invoke();
+            ImGui.SameLine();
+            if (ImGui.Button("Fullscreen")) FullscreenResquested?.Invoke();
 
             //---------- Simulation Paramss ----------
 
@@ -135,6 +147,8 @@ class HUD(Vector2 pos)
             ImGui.Checkbox("Show FPS", ref ShowFPS);
             ImGui.SameLine();
             ImGui.Checkbox("Show Guide", ref ShowGuide);
+            ImGui.SameLine();
+            ImGui.Checkbox("Show Plot", ref ShowPlot);
 
             ImGui.SameLine();
 
@@ -143,9 +157,16 @@ class HUD(Vector2 pos)
             {
                 ShowUi = !ShowUi;
             }
+
+            ;
         }
 
         ImGui.End();
+    }
 
+    public void Close()
+    {
+        Raylib.UnloadTexture(Plot.PlotTexture);
+        Raylib.UnloadImage(Plot.UpdatedImage);
     }
 }

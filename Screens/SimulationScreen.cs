@@ -6,8 +6,9 @@ using ImGuiNET;
 
 using FireForest.Core;
 using FireForest.CA;
+using FireForest.UI;
 
-namespace FireForest;
+namespace FireForest.Screens;
 
 public class SimulationScreen : IScreen
 {
@@ -21,11 +22,12 @@ public class SimulationScreen : IScreen
     private readonly HUD Hud;
 
     // UI States
-    const float UIPadding = 20f;
 
-    private ImGuiIOPtr IO;
+    private readonly float UIPadding = 20f;
+    private readonly ImGuiIOPtr IO;
     private bool TerrainChanged = false;
-
+    private readonly float PlotTimerDuration = 5 / 60f;
+    private float PlotTimer = 0;
     public SimulationScreen(int gridSizeX, int gridSizeY)
     {
         // Initialize CA
@@ -45,26 +47,24 @@ public class SimulationScreen : IScreen
         Raylib.SetWindowPosition(posX, posY);
 
         // Initialize Camera
-        Camera.Target = new Vector2(SimParams.SimulationWidth / 2f, SimParams.SimulationHeight / 2f);
+        Camera.Target = new Vector2(SimParams.ScreenWidth / 2f, SimParams.ScreenHeight / 2f);
         Camera.Offset = new Vector2(SimParams.ScreenWidth / 2, SimParams.ScreenHeight / 2);
 
-        Camera.Zoom = 1;
+        Camera.Zoom = SimParams.StartingZoom;
         Camera.Rotation = 0;
-
-        SimParams.MinZoom = SimParams.ScreenHeight / (float)SimParams.SimulationHeight;
 
         // // UI
         IO = ImGui.GetIO();
 
-        float UIPadding = 20f;
-        Hud = new(new Vector2(SimParams.ScreenWidth - UIPadding, UIPadding));
+        Hud = new();
+        Hud.SetPosition(new Vector2(SimParams.ScreenWidth - UIPadding, UIPadding));
 
         Hud.RestartCAResquested += () => Ca.Restart();
         Hud.RegenerateCAResquested += () => Ca.ReGenerate();
         Hud.ZoomOutResquested += () => ZoomOut();
         Hud.ZoomResetResquested += () => ZoomReset();
         Hud.TerrainChangedResquested += () => ChangeTerrain();
-
+        Hud.FullscreenResquested += () => ToggleFullscreen();
     }
 
     public void Update(float deltaTime)
@@ -98,11 +98,13 @@ public class SimulationScreen : IScreen
         // spawn fire at mouse pos whe click
         if (Raylib.IsMouseButtonPressed(MouseButton.Right) && (!IO.WantCaptureMouse || !Hud.ShowUi))
         {
-            Ca.SetCellOnFire(Raylib.GetScreenToWorld2D(Raylib.GetMousePosition(), Camera), CAParams.FireDuration);
+            Vector2 pos = Raylib.GetScreenToWorld2D(Raylib.GetMousePosition(), Camera);
+            pos = new Vector2(pos.X * SimParams.RatioW, pos.Y * SimParams.RatioH);
+            Ca.SetCellOnFire(pos, CAParams.FireDuration);
         }
 
         // Change Zoom
-        Camera.Zoom = MathF.Max(MathF.Exp(Raylib.GetMouseWheelMove() * 0.1f + MathF.Log(Camera.Zoom)), SimParams.MinZoom);
+        Camera.Zoom = MathF.Max(MathF.Exp(Raylib.GetMouseWheelMove() * 0.1f + MathF.Log(Camera.Zoom)), 1);
 
         // Clamp the camera in case of drag or change of zoom
         if (Raylib.IsMouseButtonDown(MouseButton.Left) || Raylib.GetMouseWheelMove() != 0)
@@ -121,34 +123,26 @@ public class SimulationScreen : IScreen
 
         if (!Hud.Stop)
         {
-            long startUpdate = Stopwatch.GetTimestamp();
-
             for (int i = 0; i < SimParams.SimulationSpeed; i++)
             {
-
                 Ca.Update(CAParams.GetSnapshotParams());
-
-
             }
-
-            TimeSpan ElapsedTimeUpdate = Stopwatch.GetElapsedTime(startUpdate);
-            Console.WriteLine(ElapsedTimeUpdate.TotalMilliseconds);
         }
 
+        PlotTimer += deltaTime;
+        if (PlotTimer >= PlotTimerDuration)
+        {
+            Hud.Plot.AddPoint(Ca.FireCount);
+            PlotTimer = 0;
+        }
+
+        Console.WriteLine(Camera.Zoom);
     }
     public void Draw()
     {
         Raylib.BeginMode2D(Camera);
 
-        long startDraw = Stopwatch.GetTimestamp();
-
-        Ca.Draw(SimParams.SimulationWidth, SimParams.SimulationHeight);
-
-        TimeSpan ElapsedTimeDraw = Stopwatch.GetElapsedTime(startDraw);
-
-        Console.WriteLine("-------------------------------------------------------");
-        Console.WriteLine(ElapsedTimeDraw.TotalMilliseconds);
-
+        Ca.Draw(SimParams.ScreenWidth, SimParams.ScreenHeight);
 
         Raylib.EndMode2D();
 
@@ -156,7 +150,6 @@ public class SimulationScreen : IScreen
 
         Hud.Draw();
     }
-
     private void ChangeTerrain()
     {
         Utils.SetupNoiseParams();
@@ -165,25 +158,43 @@ public class SimulationScreen : IScreen
 
     private void ClampCamera()
     {
-        Vector2 MinTarget = (1 / Camera.Zoom) * new Vector2(SimParams.ScreenWidth, SimParams.ScreenHeight) / 2;
-        Vector2 MaxTarget = new Vector2(SimParams.SimulationWidth, SimParams.SimulationHeight) - MinTarget;
+        Vector2 MinTarget = (0.5f / Camera.Zoom) * new Vector2(SimParams.ScreenWidth, SimParams.ScreenHeight);
+        Vector2 MaxTarget = new Vector2(SimParams.ScreenWidth, SimParams.ScreenHeight) - MinTarget;
 
         Camera.Target = Vector2.Clamp(Camera.Target, MinTarget, MaxTarget);
     }
 
     private void ZoomOut()
     {
-        Camera.Zoom = SimParams.MinZoom;
+        Camera.Zoom = 1;
         ClampCamera();
     }
 
     private void ZoomReset()
     {
-        Camera.Zoom = 1;
+        Camera.Zoom = SimParams.StartingZoom;
     }
 
     public void Close()
     {
+        Hud.Close();
         Ca.Close();
     }
+
+    public void ToggleFullscreen()
+    {
+        Raylib.ToggleFullscreen();
+
+        SimParams.ScreenWidth = Raylib.GetRenderWidth();
+        SimParams.ScreenHeight = Raylib.GetRenderHeight();
+
+        Camera.Target = new Vector2(SimParams.ScreenWidth / 2f, SimParams.ScreenHeight / 2f);
+        Camera.Offset = new Vector2(SimParams.ScreenWidth / 2, SimParams.ScreenHeight / 2);
+
+        Hud.SetPosition(new Vector2(SimParams.ScreenWidth - UIPadding, UIPadding));
+
+        ZoomOut();
+    }
+
+    
 }

@@ -4,8 +4,10 @@ using Raylib_cs;
 using rlImGui_cs;
 using ImGuiNET;
 
+
 using FireForest.Core;
 using FireForest.CA;
+using FireForest.Screens;
 
 namespace FireForest;
 
@@ -18,9 +20,11 @@ static class Program
         Raylib.InitWindow(SimParams.LauncherScreenWidth, SimParams.LauncherScreenHeight, "Launcher");
         Raylib.SetTargetFPS(SimParams.FPS);
 
+        Raylib.SetTraceLogLevel(TraceLogLevel.None);
+
         rlImGui.Setup(true);
 
-        IScreen current = new Launcher();
+        IScreen current = new LauncherScreen();
 
         while (!Raylib.WindowShouldClose())
         {

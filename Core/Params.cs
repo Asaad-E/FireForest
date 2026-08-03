@@ -41,7 +41,7 @@ public static class SimParams
 {
 
     public static int LauncherScreenWidth = 500;
-    public static int LauncherScreenHeight = 600;
+    public static int LauncherScreenHeight = 500;
 
 
     public static int ScreenWidth = 1280;
@@ -51,11 +51,16 @@ public static class SimParams
     public static int SimulationWidth = SimulationHeight * ScreenWidth / ScreenHeight;
 
 
+    public static float RatioH => SimulationHeight / (float)ScreenHeight;
+    public static float RatioW => SimulationWidth / (float)ScreenWidth;
+
+
+
     public static int MaxSimulationWidth = 5500;
     public static int MaxSimulationHeight = 5500;
 
 
-    public static float MinZoom = ScreenHeight / (float)SimulationHeight;
+    public static float StartingZoom = 1.5f;
 
 
     public static float NoiseFrecuency = 0.003f;

@@ -5,6 +5,7 @@ using Raylib_cs;
 using FireForest.Core;
 using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
+using System.Diagnostics;
 
 namespace FireForest.CA;
 
@@ -23,6 +24,9 @@ public class CAEnv
 
     private bool[] ChunkActive = [];
     private bool[] NextChunkActive = [];
+
+    public int FireCount => _fireCount;
+    private int _fireCount = 0;
 
     private static readonly (int, int)[] offsets = [(-1, 0), (1, 0), (0, -1), (0, 1)];
 
@@ -159,6 +163,8 @@ public class CAEnv
         int gridSizeY = GridSizeY;
         int gridSizeX = GridSizeX;
 
+        _fireCount = 0;
+
         var rangePartitioner = Partitioner.Create(0, gridSizeY);
 
         // Set desactive all chunk at the start of the new frame
@@ -177,6 +183,7 @@ public class CAEnv
                     if (updatedCell.Type == Cell.Types.Fire)
                     {
                         NextChunkActive[GetChunkFlatCoord(i, j)] = true;
+                        Interlocked.Increment(ref _fireCount);
                     }
 
                     // Only update the color when a changed of type occurs or it's fire
@@ -349,4 +356,5 @@ public class CAEnv
 
         return false;
     }
+
 }
