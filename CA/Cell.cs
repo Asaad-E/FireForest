@@ -34,14 +34,15 @@ public struct Cell
         new Color(1, 73, 255),
         new Color(67, 32, 4),
         new Color(100, 100, 100),
-        new Color(17, 80, 35),
+        new Color(17, 70, 35),
         new Color(240, 5, 41),
         new Color(0, 0, 0)
         ];
     public Types Type = Types.Tree;
     public short Count = 0;
     public short Duration = 0;
-    public float FuelCapacity = 1;
+    public float FuelCapacity { get; private set; } = 1;
+    public float FuelMult = 1;
 
     public float ElevationValue = 0;
 
@@ -96,5 +97,12 @@ public struct Cell
 
         Count = (short)Math.Clamp(value, 1, 32767);
         Duration = Count;
+    }
+
+    public void SetFuelCapacity(float fuelCapacity)
+    {
+        FuelCapacity = fuelCapacity;
+
+        FuelMult = Utils.EasingFunctionFuel(fuelCapacity);
     }
 }

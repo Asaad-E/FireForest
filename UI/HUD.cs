@@ -92,7 +92,7 @@ class HUD
 
             ImGui.SeparatorText("Simulation Params");
 
-            ImGui.SliderInt("Sim Speed ", ref SimParams.SimulationSpeed, 1, 10);
+            ImGui.SliderInt("Sim Speed ", ref SimParams.SimulationSpeed, 1, 5);
 
             if (ImGui.SliderFloat("Fire Expand Prob %", ref CAParams.FireProb, 0, 1))
             {

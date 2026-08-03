@@ -94,7 +94,7 @@ public class CAEnv
                     // Cell initializatino
                     newCell.Type = GetTypeFromElevation(elevation);
                     newCell.ElevationValue = elevation;
-                    newCell.FuelCapacity = fuelCapacity;
+                    newCell.SetFuelCapacity(fuelCapacity);
                     Grid[flatCoord] = newCell;
                     PixelBuffer[flatCoord] = newCell.GetColor();
                 }
@@ -254,7 +254,7 @@ public class CAEnv
 
             Cell.Types neighnorType = Grid[newX + newY * GridSizeX].Type;
 
-            if (currentCell.Type == Cell.Types.Tree && neighnorType == Cell.Types.Fire && Utils.NextFloat() <= caparams.FireProb * Utils.EasingFunctionFuel(currentCell.FuelCapacity))
+            if (currentCell.Type == Cell.Types.Tree && neighnorType == Cell.Types.Fire && Utils.NextFloat() <= caparams.FireProb * currentCell.FuelMult)
             {
                 currentCell.SetOnFire(caparams.FireDuration);
                 break;

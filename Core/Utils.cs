@@ -19,7 +19,7 @@ public static class Utils
         FuelNoise.SetNoiseType(FastNoiseLite.NoiseType.OpenSimplex2);
         FuelNoise.SetFractalType(FastNoiseLite.FractalType.FBm);
 
-        FuelNoise.SetFrequency(0.004f);
+        FuelNoise.SetFrequency(0.0045f);
         FuelNoise.SetFractalOctaves(3);
 
         SetupNoiseParams();
@@ -34,11 +34,8 @@ public static class Utils
 
     public static void SetRandomNoiseSeed()
     {
-        // ElevationNoise.SetSeed(NextInt());
-        // FuelNoise.SetSeed(NextInt());
-
-        ElevationNoise.SetSeed(2);
-        FuelNoise.SetSeed(2);
+        ElevationNoise.SetSeed(NextInt());
+        FuelNoise.SetSeed(NextInt());
     }
 
     public static float NextFloat()
@@ -76,11 +73,11 @@ public static class Utils
     {
         if (fuelCapacity < 1)
         {
-            return MathF.Pow(fuelCapacity, 3.2f);
+            return MathF.Pow(fuelCapacity, 3.5f);
         }
         else if (fuelCapacity < 1.5f)
         {
-            return MathF.Pow(fuelCapacity, 0.7f);
+            return MathF.Pow(fuelCapacity, 0.3f);
         }
         else
         {

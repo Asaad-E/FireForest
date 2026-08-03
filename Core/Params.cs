@@ -22,7 +22,7 @@ public static class CAParams
     public static float SoilProbBase = 0.00001f;
     public static int SoilProbMult = 7;
     public static float SoilProb = SoilProbBase * SoilProbMult;
-    public static float SoilProbconst = 1.2f;
+    public static float SoilProbconst = 1.3f;
 
 
     public static float SpontaneousFireProbBase = 0.0000000001f;

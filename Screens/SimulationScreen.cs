@@ -67,10 +67,8 @@ public class SimulationScreen : IScreen
         Hud.FullscreenResquested += () => ToggleFullscreen();
     }
 
-    public void Update(float deltaTime)
+    public void Controls()
     {
-        // --------------------------- Controls ---------------------------
-
         // Restart
         if (Raylib.IsKeyPressed(KeyboardKey.Space))
         {
@@ -111,6 +109,13 @@ public class SimulationScreen : IScreen
         {
             ClampCamera();
         }
+    }
+
+    public void Update(float deltaTime)
+    {
+        // --------------------------- Controls ---------------------------
+
+        Controls();
 
         // --------------------------- Update ---------------------------
 
@@ -135,8 +140,6 @@ public class SimulationScreen : IScreen
             Hud.Plot.AddPoint(Ca.FireCount);
             PlotTimer = 0;
         }
-
-        Console.WriteLine(Camera.Zoom);
     }
     public void Draw()
     {
@@ -196,5 +199,5 @@ public class SimulationScreen : IScreen
         ZoomOut();
     }
 
-    
+
 }
