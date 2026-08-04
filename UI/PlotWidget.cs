@@ -8,6 +8,8 @@ using FireForest.Core;
 using FireForest.CA;
 using ScottPlot;
 using ScottPlot.Plottables;
+using SkiaSharp;
+using System.Runtime.InteropServices;
 
 namespace FireForest.UI;
 
@@ -31,6 +33,13 @@ public class PlotWidget
 
     public float Phase = 0;
 
+    // Params for fast draw usign skiaSharp 
+
+    private readonly byte[] PixelBuffer;
+    readonly IntPtr PixelsPtr;
+    readonly SKSurface Surface;
+    readonly GCHandle PinHandle;
+
     public PlotWidget()
     {
         myPlot = new Plot();
@@ -44,7 +53,7 @@ public class PlotWidget
 
         // Apply transparent background
         myPlot.FigureBackground.Color = ScottPlot.Colors.Transparent;
-        myPlot.DataBackground.Color = ScottPlot.Color.FromHex("#101010F0");
+        myPlot.DataBackground.Color = ScottPlot.Color.FromHex("#101010d0");
 
         // Dark theme axes text & lines
 
@@ -79,22 +88,41 @@ public class PlotWidget
         LastMarker = myPlot.Add.Marker(MaxPoints - 1, 0);
         LastMarker.Color = ScottPlot.Color.FromHex("#C11007");
         LastMarker.Size = 8;
-    
+
         // Create the texture to render the plot on it
-        Raylib_cs.Image baseImage = Raylib.GenImageColor(PlotWidth, PlotHeight, Raylib_cs.Color.Blank);
-        PlotTexture = Raylib.LoadTextureFromImage(baseImage);
-        Raylib.UnloadImage(baseImage);
+
+        PixelBuffer = new byte[PlotWidth * PlotHeight * 4];
+        var imageInfo = new SKImageInfo(PlotWidth, PlotHeight, SKColorType.Rgba8888, SKAlphaType.Premul);
+
+        // Tell the GC to never touch pixelBuffer
+        PinHandle = GCHandle.Alloc(PixelBuffer, GCHandleType.Pinned);
+        PixelsPtr = PinHandle.AddrOfPinnedObject();
+
+        Surface = SKSurface.Create(imageInfo, PixelsPtr, PlotWidth * 4);
+
+
+        Raylib_cs.Image blank = Raylib.GenImageColor(PlotWidth, PlotHeight, Raylib_cs.Color.Blank);
+        PlotTexture = Raylib.LoadTextureFromImage(blank);
+        Raylib.UnloadImage(blank);
     }
 
     public void Draw()
     {
+
+
+        long start = Stopwatch.GetTimestamp();
+
         // create the plot and write the texture with the raw byte info
-        byte[] rawPixels = myPlot.GetImageBytes(PlotWidth, PlotHeight, ImageFormat.Bmp);
-        UpdatedImage = Raylib.LoadImageFromMemory(".bmp", rawPixels);
+    
+        myPlot.Render(Surface.Canvas, PlotWidth, PlotHeight);
         unsafe
         {
-            Raylib.UpdateTexture(PlotTexture, UpdatedImage.Data);
+            Raylib.UpdateTexture(PlotTexture, (void*)PixelsPtr);
         }
+
+        TimeSpan ElapsedTime = Stopwatch.GetElapsedTime(start);
+
+        Console.WriteLine(ElapsedTime.TotalMilliseconds);
 
         Raylib.DrawTexture(PlotTexture, 0, SimParams.ScreenHeight - PlotHeight, Raylib_cs.Color.White);
     }
