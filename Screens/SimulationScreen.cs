@@ -83,7 +83,7 @@ public class SimulationScreen : IScreen
 
         // Drag
         Vector2 CurrentMousePos = Raylib.GetMousePosition();
-        if (Raylib.IsMouseButtonDown(MouseButton.Left) && (!IO.WantCaptureMouse || !Hud.ShowUi))
+        if ((Raylib.IsMouseButtonDown(MouseButton.Left) || Raylib.IsMouseButtonDown(MouseButton.Middle))&& (!IO.WantCaptureMouse || !Hud.ShowUi))
         {
             if (CurrentMousePos != LastMousePos)
             {
@@ -135,7 +135,7 @@ public class SimulationScreen : IScreen
         }
 
         PlotTimer += deltaTime;
-        if (PlotTimer >= PlotTimerDuration)
+        if (!Hud.Stop && PlotTimer >= PlotTimerDuration)
         {
             Hud.Plot.AddPoint(Ca.FireCount);
             PlotTimer = 0;
