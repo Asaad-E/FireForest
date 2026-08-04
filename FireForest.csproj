@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-        <OutputType>exe</OutputType>
+        <OutputType>winexe</OutputType>
 
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -11,12 +11,14 @@
 
     <ServerGarbageCollection>true</ServerGarbageCollection>
     <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
-<DebugType>embedded</DebugType>
+
 
     <!-- Single File Packaging Settings -->
     <PublishSingleFile>true</PublishSingleFile>
     <SelfContained>true</SelfContained>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <DebugType>embedded</DebugType>
+
   </PropertyGroup>
 
   <ItemGroup>
@@ -26,5 +28,13 @@
   <PackageReference Include="ScottPlot" Version="5.1.59" />
   <PackageReference Include="SkiaSharp" Version="4.151.0" />
 </ItemGroup>
+
+<Target Name="RemoveSkiaSharpPdb" BeforeTargets="ComputeFilesToPublish">
+  <ItemGroup>
+    <ResolvedFileToPublish
+      Remove="@(ResolvedFileToPublish)"
+      Condition="'%(FileName)%(Extension)' == 'libSkiaSharp.pdb'" />
+  </ItemGroup>
+</Target>
 
 </Project>

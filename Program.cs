@@ -26,6 +26,13 @@ static class Program
 
         IScreen current = new LauncherScreen();
 
+        // Disable ini files
+        unsafe
+        {
+            ImGui.GetIO().NativePtr->LogFilename = null;
+            ImGui.GetIO().NativePtr->IniFilename = null;
+        }
+
         while (!Raylib.WindowShouldClose())
         {
             // Update
@@ -37,7 +44,7 @@ static class Program
             Raylib.BeginDrawing();
             Raylib.ClearBackground(Color.Black);
             rlImGui.Begin();
-            
+
             current.Draw();
 
             rlImGui.End();

@@ -34,11 +34,7 @@ public class PlotWidget
     public float Phase = 0;
 
     // Params for fast draw usign skiaSharp 
-
-    private readonly byte[] PixelBuffer;
-    readonly IntPtr PixelsPtr;
     readonly SKSurface Surface;
-    readonly GCHandle PinHandle;
 
     public PlotWidget()
     {
@@ -91,15 +87,8 @@ public class PlotWidget
 
         // Create the texture to render the plot on it
 
-        PixelBuffer = new byte[PlotWidth * PlotHeight * 4];
         var imageInfo = new SKImageInfo(PlotWidth, PlotHeight, SKColorType.Rgba8888, SKAlphaType.Premul);
-
-        // Tell the GC to never touch pixelBuffer
-        PinHandle = GCHandle.Alloc(PixelBuffer, GCHandleType.Pinned);
-        PixelsPtr = PinHandle.AddrOfPinnedObject();
-
-        Surface = SKSurface.Create(imageInfo, PixelsPtr, PlotWidth * 4);
-
+        Surface = SKSurface.Create(imageInfo);
 
         Raylib_cs.Image blank = Raylib.GenImageColor(PlotWidth, PlotHeight, Raylib_cs.Color.Blank);
         PlotTexture = Raylib.LoadTextureFromImage(blank);
@@ -109,20 +98,19 @@ public class PlotWidget
     public void Draw()
     {
 
-
-        long start = Stopwatch.GetTimestamp();
-
         // create the plot and write the texture with the raw byte info
-    
-        myPlot.Render(Surface.Canvas, PlotWidth, PlotHeight);
+        Surface.Canvas.Clear(SKColors.Transparent);
+        myPlot.Render(Surface);
+
+        using SKImage snapshot = Surface.Snapshot();
+        using SKPixmap pixmap = snapshot.PeekPixels();
+
         unsafe
         {
-            Raylib.UpdateTexture(PlotTexture, (void*)PixelsPtr);
+            Raylib.UpdateTexture(PlotTexture, (void*)pixmap.GetPixels()); // raw upload, no re-encode
+
         }
 
-        TimeSpan ElapsedTime = Stopwatch.GetElapsedTime(start);
-
-        Console.WriteLine(ElapsedTime.TotalMilliseconds);
 
         Raylib.DrawTexture(PlotTexture, 0, SimParams.ScreenHeight - PlotHeight, Raylib_cs.Color.White);
     }
