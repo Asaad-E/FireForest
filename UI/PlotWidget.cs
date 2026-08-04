@@ -10,6 +10,7 @@ using ScottPlot;
 using ScottPlot.Plottables;
 using SkiaSharp;
 using System.Runtime.InteropServices;
+using System.Data.Common;
 
 namespace FireForest.UI;
 
@@ -20,8 +21,8 @@ public class PlotWidget
     public int MaxPoints = 200;
 
     double[] Data = [];
-    double MaxData = float.MinValue;
-    double MinData = float.MaxValue;
+    double MaxData = 0;
+    double MinData = 0;
 
     public Plot myPlot;
     public Signal Line;
@@ -34,7 +35,9 @@ public class PlotWidget
     public float Phase = 0;
 
     // Params for fast draw usign skiaSharp 
-    readonly SKSurface Surface;
+    private SKSurface Surface;
+
+    private bool Updated = true;
 
     public PlotWidget()
     {
@@ -97,20 +100,22 @@ public class PlotWidget
 
     public void Draw()
     {
-
-        // create the plot and write the texture with the raw byte info
-        Surface.Canvas.Clear(SKColors.Transparent);
-        myPlot.Render(Surface);
-
-        using SKImage snapshot = Surface.Snapshot();
-        using SKPixmap pixmap = snapshot.PeekPixels();
-
-        unsafe
+        if (Updated)
         {
-            Raylib.UpdateTexture(PlotTexture, (void*)pixmap.GetPixels()); // raw upload, no re-encode
+            // create the plot and write the texture with the raw byte info
+            Surface.Canvas.Clear(SKColors.Transparent);
+            myPlot.Render(Surface);
 
+            using SKImage snapshot = Surface.Snapshot();
+            using SKPixmap pixmap = snapshot.PeekPixels();
+
+            unsafe
+            {
+                Raylib.UpdateTexture(PlotTexture, (void*)pixmap.GetPixels()); // raw upload, no re-encode
+
+            }
+            Updated = false;
         }
-
 
         Raylib.DrawTexture(PlotTexture, 0, SimParams.ScreenHeight - PlotHeight, Raylib_cs.Color.White);
     }
@@ -138,5 +143,7 @@ public class PlotWidget
         LastMarker.Location = new Coordinates(coordX, point);
         LastLabel.Location = new Coordinates(coordX, point);
         LastLabel.LabelText = point.ToString();
+
+        Updated = true;
     }
 }

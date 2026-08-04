@@ -14,24 +14,24 @@ namespace FireForest;
 static class Program
 {
 
-    [System.STAThread]
+    [STAThread]
     static void Main()
     {
+        // Raylib setup
         Raylib.InitWindow(SimParams.LauncherScreenWidth, SimParams.LauncherScreenHeight, "Launcher");
         Raylib.SetTargetFPS(SimParams.FPS);
-
         Raylib.SetTraceLogLevel(TraceLogLevel.None);
 
+        // Imgui setup
         rlImGui.Setup(true);
-
-        IScreen current = new LauncherScreen();
-
-        // Disable ini files
         unsafe
         {
             ImGui.GetIO().NativePtr->LogFilename = null;
             ImGui.GetIO().NativePtr->IniFilename = null;
         }
+
+        // Start with launcher screen
+        IScreen current = new LauncherScreen();
 
         while (!Raylib.WindowShouldClose())
         {
@@ -59,8 +59,8 @@ static class Program
             }
         }
 
-        rlImGui.Shutdown();
         current.Close();
+        rlImGui.Shutdown();
         Raylib.CloseWindow();
     }
 

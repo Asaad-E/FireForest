@@ -32,7 +32,6 @@ public class CAEnv
 
     // Variables for Fast draw
     private Color[] PixelBuffer = [];
-    private Image Image;
     private Texture2D GridTexture;
     public void Setup(int gridSizeX, int gridSizeY)
     {
@@ -62,8 +61,9 @@ public class CAEnv
     public void LoadTextures()
     {
         // Init
-        Image = Raylib.GenImageColor(GridSizeX, GridSizeY, Color.Black);
-        GridTexture = Raylib.LoadTextureFromImage(Image);
+        Image blank = Raylib.GenImageColor(GridSizeX, GridSizeY, Color.Black);
+        GridTexture = Raylib.LoadTextureFromImage(blank);
+        Raylib.UnloadImage(blank);
         Raylib.SetTextureFilter(GridTexture, TextureFilter.Point);
     }
     public void ReGenerate()
@@ -88,7 +88,7 @@ public class CAEnv
                     Cell newCell = new();
                     int flatCoord = i + offset;
 
-                    float elevation = Utils.GetNoise(i, j);
+                    float elevation = Utils.GetElevationNoise(i, j);
                     float fuelCapacity = Utils.GetFuelNoise(i, j);
 
                     // Cell initializatino
@@ -134,7 +134,7 @@ public class CAEnv
                 {
                     int flatCoord = i + offset;
 
-                    float elevation = Utils.GetNoise(i, j);
+                    float elevation = Utils.GetElevationNoise(i, j);
 
                     // Calculate new terrain
                     Cell.Types newType = GetTypeFromElevation(elevation);
@@ -257,7 +257,7 @@ public class CAEnv
             if (currentCell.Type == Cell.Types.Tree && neighnorType == Cell.Types.Fire && Utils.NextFloat() <= caparams.FireProb * currentCell.FuelMult)
             {
                 currentCell.SetOnFire(caparams.FireDuration);
-                break;
+                return currentCell;
             }
             else
             {
@@ -307,7 +307,6 @@ public class CAEnv
     public void Close()
     {
         Raylib.UnloadTexture(GridTexture);
-        Raylib.UnloadImage(Image);
     }
     public void SetCellOnFire(Vector2 globalPos, int fireDuration)
     {
@@ -317,13 +316,11 @@ public class CAEnv
         Grid[gridX + gridY * GridSizeX].SetOnFire(fireDuration);
     }
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-
     public (int, int) GetChunkCoord(int x, int y)
     {
         return (x >> CAParams.Shitf, y >> CAParams.Shitf);
     }
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-
     public int GetChunkFlatCoord(int x, int y)
     {
         (int cx, int cy) = GetChunkCoord(x, y);

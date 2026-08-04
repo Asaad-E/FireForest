@@ -19,8 +19,6 @@ public class LauncherScreen : IScreen
     private readonly float StartButtonW = 200.0f;
     private readonly float StartButtonH = 40;
 
-    private string MSG = "Start";
-
     public void Update(float deltaTime){}
     public void Draw()
     {
@@ -95,13 +93,11 @@ public class LauncherScreen : IScreen
                 }
             }
 
-
             ImGui.SetWindowFontScale(2);
             ImGui.SetCursorPosY(SimParams.LauncherScreenHeight - StartButtonH - 20);
             ImGui.SetCursorPosX((SimParams.LauncherScreenWidth - StartButtonW) * 0.5f);
-            if (ImGui.Button(MSG, new Vector2(StartButtonW, StartButtonH)))
+            if (ImGui.Button("Start", new Vector2(StartButtonW, StartButtonH)))
             {
-                MSG = "Loading...";
                 StartSimulation();
             }
         }

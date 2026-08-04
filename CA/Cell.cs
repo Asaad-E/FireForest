@@ -93,7 +93,7 @@ public struct Cell
         double value = Math.Exp(u + std * Utils.NextGaussian());
 
         // Use fuel capacity more a offset to afect the duration (more fuel = more duration)
-        value = Math.Round((FuelCapacity + 0.2f) * value);
+        value = Math.Floor((FuelCapacity + 0.2f) * value);
 
         Count = (short)Math.Clamp(value, 1, 32767);
         Duration = Count;

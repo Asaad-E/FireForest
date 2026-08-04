@@ -48,7 +48,7 @@ public static class Utils
         return Random.Shared.Next();
     }
 
-    public static float GetNoise(float x, float y)
+    public static float GetElevationNoise(float x, float y)
     {
         return (ElevationNoise.GetNoise(x, y) + 1f) / 2f;
     }
