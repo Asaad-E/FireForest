@@ -63,7 +63,7 @@ Tree --(ignition)--> Fire --(burns out)--> Calcined --(regrowth)--> Soil --(regr
 
 Key techniques:
 
-- **Parallelized update loop** — the grid is partitioned into row ranges and updated concurrently via `Parallel.ForEach` with a range partitioner, rather than per-cell parallel dispatch, to keep scheduling overhead low relative to per-cell work.
+- **Parallelized update loop** — the grid is partitioned into row ranges and updated concurrently with a range partitioner, rather than per-cell parallel dispatch, to keep scheduling overhead low relative to per-cell work.
 - **Double buffering** — the simulation reads from one grid buffer and writes to a second, then swaps, avoiding in-place mutation hazards under parallel updates.
 - **Branch-based edge wraparound** — neighbor lookups near grid edges use conditional add/subtract instead of modulo, since offsets are always ±1; this avoids the cost of integer division on every neighbor check across the whole grid, every frame.
 - **Spatial chunk activation** — the grid is divided into fixed-size chunks. A chunk (and its immediate neighbors, to catch fire spreading across chunk borders) is only marked "active" if it contains a burning cell. Cells outside any active chunk skip the expensive neighbor-fire-check and RNG calls entirely, only running the cheap spontaneous-ignition and regrowth checks. This cuts idle/sparse-fire frame cost significantly, at a small, bounded cost when most of the grid is active.
