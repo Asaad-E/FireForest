@@ -37,6 +37,7 @@ public class SimulationScreen : IScreen
 
         // Change the scren size
         Raylib.SetWindowSize(SimParams.ScreenWidth, SimParams.ScreenHeight);
+        Raylib.SetWindowTitle("Fire Forest CA Simulation");
 
         int monitor = Raylib.GetCurrentMonitor();
         int monitorWidth = Raylib.GetMonitorWidth(monitor);
