@@ -1,4 +1,5 @@
 
+using System.Runtime.CompilerServices;
 using Raylib_cs;
 
 namespace FireForest.Core;
@@ -18,7 +19,7 @@ public static class Utils
         FuelNoise.SetNoiseType(FastNoiseLite.NoiseType.OpenSimplex2);
         FuelNoise.SetFractalType(FastNoiseLite.FractalType.FBm);
 
-        FuelNoise.SetFrequency(0.004f);
+        FuelNoise.SetFrequency(0.0045f);
         FuelNoise.SetFractalOctaves(3);
 
         SetupNoiseParams();
@@ -47,9 +48,9 @@ public static class Utils
         return Random.Shared.Next();
     }
 
-    public static float GetNoise(float x, float y)
+    public static float GetElevationNoise(float x, float y)
     {
-        return ElevationNoise.GetNoise(x, y);
+        return (ElevationNoise.GetNoise(x, y) + 1f) / 2f;
     }
 
     public static float GetFuelNoise(float x, float y)
@@ -58,27 +59,27 @@ public static class Utils
     }
 
 
-    public static float NextGaussian()
+    public static double NextGaussian()
     {
         // Box-Muller transform for generate a quick Noraml variable
-        float u1 = 1.0f - Random.Shared.NextSingle();
-        float u2 = 1.0f - Random.Shared.NextSingle();
-        float randNormal = MathF.Sqrt(-2.0f * MathF.Log(u1)) * MathF.Sin(-2.0f * MathF.PI * u2);
+        double u1 = 1.0f - Random.Shared.NextDouble();
+        double u2 = 1.0f - Random.Shared.NextDouble();
+        double randNormal = Math.Sqrt(-2.0 * Math.Log(u1)) * Math.Sin(-2.0 * Math.PI * u2);
 
         return randNormal;
     }
-
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static float EasingFunctionFuel(float fuelCapacity)
     {
         if (fuelCapacity < 1)
         {
-            return MathF.Pow(fuelCapacity, 3.2f);
+            return MathF.Pow(fuelCapacity, 3.5f);
         }
-        else if(fuelCapacity < 1.5f)
+        else if (fuelCapacity < 1.5f)
         {
-            return MathF.Pow(fuelCapacity, 0.7f);
+            return MathF.Pow(fuelCapacity, 0.3f);
         }
-        else 
+        else
         {
             return MathF.Pow(fuelCapacity, 1.5f);
         }
