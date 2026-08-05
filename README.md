@@ -21,6 +21,13 @@ A real-time wildfire cellular automaton simulation built in C# with Raylib. Simu
 * **Spacebar:** Regenerate terrain
 * **Control:** Show/hide UI.
 
+## Tech stack
+ 
+- **C# / .NET** — simulation core and app logic
+- **[Raylib-cs](https://github.com/ChrisDill/Raylib-cs)** — window, input, and GPU texture rendering
+- **[ImGui.NET](https://github.com/ImGuiNET/ImGui.NET)** + **[rlImgui-cs](https://github.com/raylib-extras/rlImGui-cs)** — UI for the parameter and options panels.
+- **[ScottPlot](https://scottplot.net/)** + **SkiaSharp** — real-time Fire Count plotting with fast rendering
+
 ## Getting Started
  
 ### Windows (prebuilt binary)
@@ -63,10 +70,3 @@ Key techniques:
 - **Spatial chunk activation** — the grid is divided into fixed-size chunks. A chunk (and its immediate neighbors, to catch fire spreading across chunk borders) is only marked "active" if it contains a burning cell. Cells outside any active chunk skip the expensive neighbor-fire-check and RNG calls entirely, only running the cheap spontaneous-ignition and regrowth checks. This cuts idle/sparse-fire frame cost significantly, at a small, bounded cost when most of the grid is active.
 - **CPU color buffer + single GPU texture upload** — Rendering doesn't draw per-cell primitives. Each cell writes its color into a flat Color buffer sized to the grid, which is only touched when a cell's type changes (or it's actively burning). Once per frame, that whole buffer is pushed to a single GPU texture, which is then drawn scaled to the screen with one draw call. This makes rendering cost stay flat and small (low single-digit ms) regardless of grid size.
 - **Thread-safe shared RNG** — all random sampling goes through `Random.Shared`, avoiding both lock contention and the correctness risk of a single non-thread-safe RNG instance under parallel updates.
-
-## Tech stack
- 
-- **C# / .NET** — simulation core and app logic
-- **[Raylib-cs](https://github.com/ChrisDill/Raylib-cs)** — window, input, and GPU texture rendering
-- **[ImGui.NET](https://github.com/ImGuiNET/ImGui.NET)** + **[rlImgui-cs](https://github.com/raylib-extras/rlImGui-cs)** — UI for the parameter and options panels.
-- **[ScottPlot](https://scottplot.net/)** + **SkiaSharp** — real-time Fire Count plotting with fast rendering
