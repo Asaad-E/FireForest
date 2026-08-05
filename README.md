@@ -22,7 +22,6 @@ A real-time wildfire cellular automaton simulation built in C# with Raylib. Simu
 * **Control:** Show/hide UI.
 
 ## Tech stack
- 
 - **C# / .NET** — simulation core and app logic
 - **[Raylib-cs](https://github.com/ChrisDill/Raylib-cs)** — window, input, and GPU texture rendering
 - **[ImGui.NET](https://github.com/ImGuiNET/ImGui.NET)** + **[rlImgui-cs](https://github.com/raylib-extras/rlImGui-cs)** — UI for the parameter and options panels.
