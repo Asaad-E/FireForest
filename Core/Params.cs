@@ -46,7 +46,7 @@ public static class SimParams
 
     public static int ScreenWidth = 1280;
     public static int ScreenHeight = 720;
-    public static int SimulationHeight = 900;
+    public static int SimulationHeight = 1500;
 
     public static int SimulationWidth = SimulationHeight * ScreenWidth / ScreenHeight;
 

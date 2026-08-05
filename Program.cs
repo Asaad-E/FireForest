@@ -8,6 +8,8 @@ using ImGuiNET;
 using FireForest.Core;
 using FireForest.CA;
 using FireForest.Screens;
+using System.Reflection;
+using System.Text;
 
 namespace FireForest;
 
@@ -21,6 +23,9 @@ static class Program
         Raylib.InitWindow(SimParams.LauncherScreenWidth, SimParams.LauncherScreenHeight, "Launcher");
         Raylib.SetTargetFPS(SimParams.FPS);
         Raylib.SetTraceLogLevel(TraceLogLevel.None);
+
+        // Icon
+        LoadEmbedIcon();
 
         // Imgui setup
         rlImGui.Setup(true);
@@ -64,6 +69,13 @@ static class Program
         Raylib.CloseWindow();
     }
 
+    static void LoadEmbedIcon()
+    {
+        string iconPath = Path.Combine(AppContext.BaseDirectory, "Assets", "icon.png");
+        Image icon = Raylib.LoadImage(iconPath);
+        Raylib.SetWindowIcon(icon);
+        Raylib.UnloadImage(icon);
 
+    }
 }
 

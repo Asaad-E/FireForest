@@ -1,40 +1,45 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-        <OutputType>winexe</OutputType>
+    <OutputType>winexe</OutputType>
 
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-
     <ServerGarbageCollection>true</ServerGarbageCollection>
     <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
+    <ApplicationIcon>Assets/icon.ico</ApplicationIcon>
 
 
     <!-- Single File Packaging Settings -->
     <PublishSingleFile>true</PublishSingleFile>
     <SelfContained>true</SelfContained>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>
     <DebugType>embedded</DebugType>
 
   </PropertyGroup>
 
   <ItemGroup>
-  <PackageReference Include="ImGui.NET" Version="1.91.6.1" />
-  <PackageReference Include="Raylib-cs" Version="8.0.0" />
-  <PackageReference Include="rlImgui-cs" Version="3.2.0" />
-  <PackageReference Include="ScottPlot" Version="5.1.59" />
-  <PackageReference Include="SkiaSharp" Version="4.151.0" />
-</ItemGroup>
+    <PackageReference Include="ImGui.NET" Version="1.91.6.1" />
+    <PackageReference Include="Raylib-cs" Version="8.0.0" />
+    <PackageReference Include="rlImgui-cs" Version="3.2.0" />
+    <PackageReference Include="ScottPlot" Version="5.1.59" />
+    <PackageReference Include="SkiaSharp" Version="4.151.0" />
 
-<Target Name="RemoveSkiaSharpPdb" BeforeTargets="ComputeFilesToPublish">
-  <ItemGroup>
-    <ResolvedFileToPublish
-      Remove="@(ResolvedFileToPublish)"
-      Condition="'%(FileName)%(Extension)' == 'libSkiaSharp.pdb'" />
+    <Content Include="Assets\icon.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+
   </ItemGroup>
-</Target>
+
+  <Target Name="RemoveSkiaSharpPdb" BeforeTargets="ComputeFilesToPublish">
+    <ItemGroup>
+      <ResolvedFileToPublish
+        Remove="@(ResolvedFileToPublish)"
+        Condition="'%(FileName)%(Extension)' == 'libSkiaSharp.pdb'" />
+    </ItemGroup>
+  </Target>
 
 </Project>
