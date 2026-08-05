@@ -25,7 +25,7 @@ A real-time wildfire cellular automaton simulation built in C# with Raylib. Simu
  
 ### Windows (prebuilt binary)
  
-Download `FireForest.exe` from the [Releases](https://github.com/xxx/FireForest/releases) page and run it directly. No .NET install required if published as self-contained.
+Download `FireForest.exe` from the [Releases](https://github.com/Asaad-E/FireForest/releases) page and run it directly. No .NET install required if published as self-contained.
  
 ### Build from source (Windows / Linux / macOS)
  
