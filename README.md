@@ -1,5 +1,7 @@
 # FireForest
 
+![Showcase](Docs/showcase.gif)
+
 A real-time wildfire cellular automaton simulation built in C# with Raylib. Simulates fire ignition, spread, burnout, and forest regrowth over a procedurally generated terrain, with live-tunable parameters and a real-time stats overlay.
 
 ## Features
